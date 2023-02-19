@@ -22,6 +22,7 @@ import './controllers/SavingNotificationController'
 import './controllers/CompileButton'
 import './controllers/SwitchToPDFButton'
 import getMeta from '../../utils/meta'
+import { hasSeenCM6SwitchAwaySurvey } from '../../features/source-editor/utils/switch-away-survey'
 
 let EditorManager
 
@@ -45,6 +46,7 @@ export default EditorManager = (function () {
         wantTrackChanges: false,
         docTooLongErrorShown: false,
         showRichText: this.showRichText(),
+        showVisual: this.showVisual(),
         newSourceEditor: this.newSourceEditor(),
         showSymbolPalette: false,
         toggleSymbolPalette: () => {
@@ -160,10 +162,32 @@ export default EditorManager = (function () {
       if (!this.$scope.editor.sharejs_doc) {
         return null
       }
-      return this.$scope.editor.sharejs_doc.editorType()
+
+      let editorType = this.$scope.editor.sharejs_doc.editorType()
+
+      if (editorType === 'cm6' && this.$scope.editor.showVisual) {
+        editorType = 'cm6-rich-text'
+      }
+
+      return editorType
     }
 
     showRichText() {
+      if (getMeta('ol-richTextVariant') === 'cm6') {
+        return false
+      }
+
+      return (
+        this.localStorage(`editor.mode.${this.$scope.project_id}`) ===
+        'rich-text'
+      )
+    }
+
+    showVisual() {
+      if (getMeta('ol-richTextVariant') !== 'cm6') {
+        return false
+      }
+
       return (
         this.localStorage(`editor.mode.${this.$scope.project_id}`) ===
         'rich-text'
@@ -171,16 +195,17 @@ export default EditorManager = (function () {
     }
 
     newSourceEditor() {
-      // only use the new source editor if the option to switch is available
-      if (!getMeta('ol-showNewSourceEditorOption')) {
+      // the new source editor is not available at the moment in CE
+      if (!getMeta('ol-hasNewSourceEditor')) {
         return false
       }
 
-      // We will be restarting the survey later after some time
-      // Until then, we won't force user to use cm6 if they already use ace
-      const showCM6SwitchAwaySurvey = false
+      // Use the new source editor if the legacy editor is disabled
+      if (!getMeta('ol-showLegacySourceEditor')) {
+        return true
+      }
 
-      if (!showCM6SwitchAwaySurvey) {
+      const storedPrefIsCM6 = () => {
         const sourceEditor = this.localStorage(
           `editor.source_editor.${this.$scope.project_id}`
         )
@@ -188,19 +213,17 @@ export default EditorManager = (function () {
         return sourceEditor === 'cm6' || sourceEditor == null
       }
 
-      // the key will be changed when we decided to restart the survey
-      const hasSeenCM6SwitchAwaySurvey = this.localStorage(
-        'editor.has_seen_cm6_switch_away_survey'
-      )
+      const showCM6SwitchAwaySurvey = getMeta('ol-showCM6SwitchAwaySurvey')
 
-      if (hasSeenCM6SwitchAwaySurvey) {
-        const sourceEditor = this.localStorage(
-          `editor.source_editor.${this.$scope.project_id}`
-        )
+      if (!showCM6SwitchAwaySurvey) {
+        return storedPrefIsCM6()
+      }
 
-        return sourceEditor === 'cm6' || sourceEditor == null
+      if (hasSeenCM6SwitchAwaySurvey()) {
+        return storedPrefIsCM6()
       } else {
-        // force user to switch to cm6 if they haven't seen the switch away survey
+        // force user to switch to cm6 if they haven't seen either of the
+        // switch-away surveys
         return true
       }
     }

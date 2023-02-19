@@ -104,12 +104,11 @@ function ActionButton({
   disabled,
 }: ActionButtonProps) {
   const { t } = useTranslation()
-
   if (!hasFeature) {
     return (
       <Button
         bsStyle={null}
-        className="btn-secondary-info btn-secondary"
+        className="btn-primary"
         href="/user/subscription/plans"
         onClick={trackUpgradeClick}
       >
@@ -124,14 +123,23 @@ function ActionButton({
     )
   } else {
     return (
-      <Button
-        bsStyle={null}
-        className="btn-secondary-info btn-secondary"
-        href={linkPath}
-        disabled={disabled}
-      >
-        <span className="text-capitalize">{t('link')}</span>
-      </Button>
+      <>
+        {disabled ? (
+          <button
+            disabled
+            className="btn btn-secondary-info btn-secondary text-capitalize"
+          >
+            {t('link')}
+          </button>
+        ) : (
+          <a
+            className="btn btn-secondary-info btn-secondary text-capitalize"
+            href={linkPath}
+          >
+            {t('link')}
+          </a>
+        )}
+      </>
     )
   }
 }

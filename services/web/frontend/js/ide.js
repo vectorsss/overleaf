@@ -66,8 +66,11 @@ import './features/share-project-modal/controllers/react-share-project-modal-con
 import './features/source-editor/controllers/editor-switch-controller'
 import './features/source-editor/controllers/cm6-switch-away-survey-controller'
 import './features/source-editor/controllers/grammarly-warning-controller'
+import './features/outline/controllers/documentation-button-controller'
 import { cleanupServiceWorker } from './utils/service-worker-cleanup'
 import { reportCM6Perf } from './infrastructure/cm6-performance'
+import { reportAcePerf } from './ide/editor/ace-performance'
+import { scheduleUserContentDomainAccessCheck } from './features/user-content-domain-access-check'
 
 App.controller(
   'IdeController',
@@ -265,7 +268,7 @@ If the project has been renamed please look in your project list for a new proje
           editorType,
         }
 
-        if (editorType === 'cm6') {
+        if (editorType === 'cm6' || editorType === 'cm6-rich-text') {
           const cm6PerfData = reportCM6Perf()
 
           // Ignore if no typing has happened
@@ -287,6 +290,8 @@ If the project has been renamed please look in your project list for a new proje
               'MeanLagsPerMeasure',
               'MeanKeypressesPerMeasure',
               'MeanKeypressPaint',
+              'LongTasks',
+              'Release',
             ]
 
             for (const prop of perfProps) {
@@ -294,6 +299,32 @@ If the project has been renamed please look in your project list for a new proje
                 cm6PerfData[prop.charAt(0).toLowerCase() + prop.slice(1)]
               if (perfValue !== null) {
                 segmentation['cm6Perf' + prop] = perfValue
+              }
+            }
+          }
+        } else if (editorType === 'ace') {
+          const acePerfData = reportAcePerf()
+
+          if (acePerfData.numberOfEntries > 0) {
+            const perfProps = [
+              'NumberOfEntries',
+              'MeanKeypressPaint',
+              'Grammarly',
+              'SessionLength',
+              'Memory',
+              'Lags',
+              'NonLags',
+              'LongestLag',
+              'MeanLagsPerMeasure',
+              'MeanKeypressesPerMeasure',
+              'Release',
+            ]
+
+            for (const prop of perfProps) {
+              const perfValue =
+                acePerfData[prop.charAt(0).toLowerCase() + prop.slice(1)]
+              if (perfValue !== null) {
+                segmentation['acePerf' + prop] = perfValue
               }
             }
           }
@@ -387,24 +418,8 @@ If the project has been renamed please look in your project list for a new proje
       }
     })
 
-    $scope.recompileViaKey = () => {
-      if ($scope.recompile) {
-        $scope.recompile()
-      } else {
-        window.dispatchEvent(new CustomEvent('pdf:recompile'))
-      }
-    }
-
-    $scope.handleKeyDown = event => {
-      if (event.shiftKey || event.altKey) {
-        return
-      }
-
-      // Ctrl+s or Cmd+s => recompile
-      if (event.key === 's' && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault()
-        $scope.recompileViaKey()
-      }
+    $scope.handleKeyDown = () => {
+      // unused?
     }
 
     try {
@@ -466,6 +481,7 @@ If the project has been renamed please look in your project list for a new proje
 )
 
 cleanupServiceWorker()
+scheduleUserContentDomainAccessCheck()
 
 angular.module('SharelatexApp').config(function ($provide) {
   $provide.decorator('$browser', [

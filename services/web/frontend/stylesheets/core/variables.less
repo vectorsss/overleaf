@@ -9,6 +9,8 @@
 @gray-lighter: #cfcfcf;
 @gray-lightest: #f0f0f0;
 @white: #ffffff;
+@neutral-20: #e7e9ee;
+@neutral-90: #1b222c;
 
 // Styleguide colors
 @ol-blue-gray-0: #f4f5f8;
@@ -41,6 +43,9 @@
 @orange-dark: #9e5e04;
 @pink: #c3325f;
 @purple: #7a43b6;
+@red-10: #f9f1f1;
+@red-50: #b83a33;
+@neutral-60: #677283;
 
 @brand-primary: @ol-green;
 @brand-secondary: @ol-dark-green;
@@ -55,6 +60,8 @@
 @accent-color-secondary: @ol-dark-green;
 
 @editor-header-logo-background: url(../../../public/img/ol-brand/overleaf-o-white.svg)
+  center / contain no-repeat;
+@editor-header-logo-background-active: url(../../../public/img/ol-brand/overleaf-o-white.svg)
   center / contain no-repeat;
 @editor-loading-logo-padding-top: 115.44%;
 @editor-loading-logo-background-url: url(../../../public/img/ol-brand/overleaf-o-grey.svg);
@@ -528,7 +535,7 @@
 //##
 
 //** Tooltip max width
-@tooltip-max-width: 200px;
+@tooltip-max-width: 220px;
 //** Tooltip text color
 @tooltip-color: #fff;
 //** Tooltip background color
@@ -641,6 +648,10 @@
 @alert-info-bg: @brand-info;
 @alert-info-text: #fff;
 @alert-info-border: transparent;
+
+@alert-info-alt-bg: @v2-dash-pane-bg;
+@alert-info-alt-text: @v2-dash-pane-subdued-color;
+@alert-info-alt-border: transparent;
 
 @alert-warning-bg: @brand-warning;
 @alert-warning-text: #fff;

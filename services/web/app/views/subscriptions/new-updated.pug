@@ -39,8 +39,8 @@ block content
 										li #{translate("reference_search")}
 									if plan.features.mendeley || plan.features.zotero
 										li #{translate("reference_sync")}
-									if plan.features.symbolyPalette
-										li #{translate("symboly_palette")}
+									if plan.features.symbolPalette
+										li #{translate("symbol_palette")}
 
 
 							div.price-summary(ng-if="recurlyPrice")
@@ -329,7 +329,7 @@ block content
 											p(ng-if="paymentMethod.value === 'paypal'") #{translate("paypal_upgrade")}
 
 											div.payment-submit
-												button.btn.btn-success.btn-block(
+												button.btn.btn-primary.btn-block(
 													ng-click="submit()"
 													ng-disabled="processing  || !isFormValid(simpleCCForm);"
 												)

@@ -27,9 +27,8 @@ describe('<GrammarlyWarning />', function () {
 
   it('shows warning when grammarly is available', async function () {
     grammarlyStub.returns(true)
-    window.metaAttributesCache.set('ol-showNewSourceEditorOption', true)
 
-    renderWithEditorContext(<GrammarlyWarning />, {
+    renderWithEditorContext(<GrammarlyWarning delay={100} />, {
       scope: {
         editor: {
           newSourceEditor: true,
@@ -46,9 +45,8 @@ describe('<GrammarlyWarning />', function () {
 
   it('does not show warning when grammarly is not available', async function () {
     grammarlyStub.returns(false)
-    window.metaAttributesCache.set('ol-showNewSourceEditorOption', true)
 
-    renderWithEditorContext(<GrammarlyWarning />, {
+    renderWithEditorContext(<GrammarlyWarning delay={100} />, {
       scope: {
         editor: {
           newSourceEditor: true,
@@ -68,9 +66,8 @@ describe('<GrammarlyWarning />', function () {
   it('does not show warning when user has dismissed the warning', async function () {
     grammarlyStub.returns(true)
     localStorage.setItem('editor.has_dismissed_grammarly_warning', true)
-    window.metaAttributesCache.set('ol-showNewSourceEditorOption', true)
 
-    renderWithEditorContext(<GrammarlyWarning />, {
+    renderWithEditorContext(<GrammarlyWarning delay={100} />, {
       scope: {
         editor: {
           newSourceEditor: true,
@@ -87,26 +84,10 @@ describe('<GrammarlyWarning />', function () {
     })
   })
 
-  it('does not show warning when user does not have CM6', async function () {
-    grammarlyStub.returns(true)
-    window.metaAttributesCache.set('ol-showNewSourceEditorOption', false)
-
-    renderWithEditorContext(<GrammarlyWarning />)
-
-    await waitFor(() => {
-      expect(
-        screen.queryByText(
-          'A browser extension, for example Grammarly, may be slowing down Overleaf.'
-        )
-      ).to.not.exist
-    })
-  })
-
   it('does not show warning when user have ace as their preference', async function () {
     grammarlyStub.returns(true)
-    window.metaAttributesCache.set('ol-showNewSourceEditorOption', true)
 
-    renderWithEditorContext(<GrammarlyWarning />, {
+    renderWithEditorContext(<GrammarlyWarning delay={100} />, {
       scope: {
         editor: {
           newSourceEditor: false,
@@ -125,9 +106,8 @@ describe('<GrammarlyWarning />', function () {
 
   it('does not show warning when user have rich text as their preference', async function () {
     grammarlyStub.returns(true)
-    window.metaAttributesCache.set('ol-showNewSourceEditorOption', true)
 
-    renderWithEditorContext(<GrammarlyWarning />, {
+    renderWithEditorContext(<GrammarlyWarning delay={100} />, {
       scope: {
         editor: {
           newSourceEditor: true,
@@ -147,9 +127,8 @@ describe('<GrammarlyWarning />', function () {
 
   it('hides warning if close button is pressed', async function () {
     grammarlyStub.returns(true)
-    window.metaAttributesCache.set('ol-showNewSourceEditorOption', true)
 
-    renderWithEditorContext(<GrammarlyWarning />, {
+    renderWithEditorContext(<GrammarlyWarning delay={100} />, {
       scope: {
         editor: {
           newSourceEditor: true,

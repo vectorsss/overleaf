@@ -93,6 +93,9 @@
       color: @toolbar-btn-active-color;
       background-color: @toolbar-btn-active-bg-color;
       box-shadow: @toolbar-btn-active-shadow;
+      .editor-menu-icon {
+        background: @editor-header-logo-background-active;
+      }
     }
     .label {
       top: 4px;
@@ -237,12 +240,11 @@
 }
 
 .toggle-switch {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   height: @toolbar-btn-height;
   margin-right: 5px;
   border-radius: @btn-border-radius-base;
-  overflow: hidden;
   background-color: @toggle-switch-bg;
   padding: 2px;
 }
@@ -278,6 +280,10 @@
   position: absolute;
   opacity: 0;
   pointer-events: none;
+}
+
+.toggle-switch-input:disabled + .toggle-switch-label {
+  cursor: not-allowed;
 }
 
 .toggle-switch-input:checked + .toggle-switch-label {

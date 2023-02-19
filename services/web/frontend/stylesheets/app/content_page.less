@@ -8,22 +8,21 @@
   /*
     Links and Buttons
   */
-  &:not(.page-style) {
-    a {
-      color: @link-color-alt;
-      &:hover {
-        color: @link-hover-color-alt;
-      }
+
+  a {
+    color: @link-color-alt;
+    &:hover {
+      color: @link-hover-color-alt;
     }
-    // correct color property set on <a> above:
-    .reset-btns;
-    .alert {
-      .alert;
-    }
-    .alert-info {
-      .btn-info {
-        .btn-alert-info;
-      }
+  }
+  // correct color property set on <a> above:
+  .reset-btns;
+  .alert {
+    .alert;
+  }
+  .alert-info {
+    .btn-info {
+      .btn-alert-info;
     }
   }
 
@@ -48,7 +47,7 @@
   }
 
   .page-header {
-    margin-top: 0;
+    margin-top: 0px;
   }
 
   /*
@@ -83,7 +82,9 @@
       &.green-dark,
       &.blue-gray-dark {
         .no-card * {
-          color: @white;
+          &:not(.btn) {
+            color: @white;
+          }
           a {
             text-decoration: underline;
           }

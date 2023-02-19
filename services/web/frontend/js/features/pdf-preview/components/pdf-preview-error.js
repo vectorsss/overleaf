@@ -5,7 +5,6 @@ import { Button } from 'react-bootstrap'
 import PdfLogEntry from './pdf-log-entry'
 import { useDetachCompileContext as useCompileContext } from '../../../shared/context/detach-compile-context'
 import { useStopOnFirstError } from '../../../shared/hooks/use-stop-on-first-error'
-import StopOnFirstErrorBadge from '../../../shared/components/stop-on-first-error-badge'
 
 function PdfPreviewError({ error }) {
   const { t } = useTranslation()
@@ -28,15 +27,17 @@ function PdfPreviewError({ error }) {
               </Trans>
               <br />
               <br />
-              <Trans i18nKey="last_resort_trouble_shooting_guide">
-                {
+              <Trans
+                i18nKey="last_resort_trouble_shooting_guide"
+                components={[
                   // eslint-disable-next-line jsx-a11y/anchor-has-content
                   <a
                     href="/learn/how-to/Resolving_access%2C_loading%2C_and_display_problems"
                     target="_blank"
-                  />
-                }
-              </Trans>
+                    key="troubleshooting-link"
+                  />,
+                ]}
+              />
             </>
           }
           level="warning"
@@ -51,8 +52,12 @@ function PdfPreviewError({ error }) {
           <Trans
             i18nKey="try_recompile_project_or_troubleshoot"
             components={[
-              // eslint-disable-next-line react/jsx-key, jsx-a11y/anchor-has-content
-              <a href="/learn/how-to/Resolving_access%2C_loading%2C_and_display_problems" />,
+              // eslint-disable-next-line jsx-a11y/anchor-has-content
+              <a
+                href="/learn/how-to/Resolving_access%2C_loading%2C_and_display_problems"
+                target="_blank"
+                key="troubleshooting-link"
+              />,
             ]}
           />
         </ErrorLogEntry>
@@ -156,9 +161,9 @@ function PdfPreviewError({ error }) {
               <strong key="strong-" />,
               // eslint-disable-next-line jsx-a11y/anchor-has-content
               <a
-                key="learn-link"
-                target="_blank"
                 href="/learn/how-to/Resolving_access%2C_loading%2C_and_display_problems"
+                target="_blank"
+                key="troubleshooting-link"
               />,
               // eslint-disable-next-line jsx-a11y/anchor-has-content
               <a key="contact-link" target="_blank" href="/contact" />,
@@ -254,7 +259,6 @@ function TimedOutLogEntry() {
                   />,
                 ]}
               />{' '}
-              <StopOnFirstErrorBadge placement="bottom" />
             </>
           )}
         </li>

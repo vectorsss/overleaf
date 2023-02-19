@@ -45,6 +45,8 @@ const SubscriptionViewModelBuilder = require('../Subscription/SubscriptionViewMo
 const SurveyHandler = require('../Survey/SurveyHandler')
 const { expressify } = require('../../util/promises')
 const ProjectListController = require('./ProjectListController')
+const ProjectAuditLogHandler = require('./ProjectAuditLogHandler')
+const PublicAccessLevels = require('../Authorization/PublicAccessLevels')
 
 /**
  * @typedef {import("./types").GetProjectsRequest} GetProjectsRequest
@@ -131,9 +133,21 @@ const ProjectController = {
 
   updateProjectAdminSettings(req, res, next) {
     const projectId = req.params.Project_id
+    const user = SessionManager.getSessionUser(req.session)
+    const publicAccessLevel = req.body.publicAccessLevel
+    const publicAccessLevels = [
+      PublicAccessLevels.READ_ONLY,
+      PublicAccessLevels.READ_AND_WRITE,
+      PublicAccessLevels.PRIVATE,
+      PublicAccessLevels.TOKEN_BASED,
+    ]
 
-    const jobs = []
-    if (req.body.publicAccessLevel != null) {
+    if (
+      req.body.publicAccessLevel != null &&
+      publicAccessLevels.includes(publicAccessLevel)
+    ) {
+      const jobs = []
+
       jobs.push(callback =>
         EditorController.setPublicAccessLevel(
           projectId,
@@ -141,14 +155,26 @@ const ProjectController = {
           callback
         )
       )
-    }
 
-    async.series(jobs, error => {
-      if (error != null) {
-        return next(error)
-      }
-      res.sendStatus(204)
-    })
+      jobs.push(callback =>
+        ProjectAuditLogHandler.addEntry(
+          projectId,
+          'toggle-access-level',
+          user._id,
+          { publicAccessLevel: req.body.publicAccessLevel, status: 'OK' },
+          callback
+        )
+      )
+
+      async.series(jobs, error => {
+        if (error != null) {
+          return next(error)
+        }
+        res.sendStatus(204)
+      })
+    } else {
+      res.sendStatus(500)
+    }
   },
 
   deleteProject(req, res) {
@@ -491,20 +517,37 @@ const ProjectController = {
             }
           )
         },
-        primaryEmailCheckActive(cb) {
+        userIsMemberOfGroupSubscription(cb) {
+          LimitationsManager.userIsMemberOfGroupSubscription(
+            currentUser,
+            (error, isMember) => {
+              if (error) {
+                logger.error(
+                  { err: error },
+                  'Failed to check whether user is a member of group subscription'
+                )
+                return cb(null, false)
+              }
+              cb(null, isMember)
+            }
+          )
+        },
+        groupsAndEnterpriseBannerAssignment(cb) {
           SplitTestHandler.getAssignment(
             req,
             res,
-            'primary-email-check',
+            'groups-and-enterprise-banner',
             (err, assignment) => {
               if (err) {
                 logger.warn(
                   { err },
-                  'failed to get "primary-email-check" split test assignment'
+                  'failed to get "groups-and-enterprise-banner" split test assignment'
                 )
-                cb(null, false)
+
+                const defaultAssignment = { variant: 'default' }
+                cb(null, defaultAssignment)
               } else {
-                cb(null, assignment.variant === 'active')
+                cb(null, assignment)
               }
             }
           )
@@ -526,12 +569,16 @@ const ProjectController = {
           OError.tag(err, 'error getting data for project list page')
           return next(err)
         }
-        const { notifications, user, userEmailsData, primaryEmailCheckActive } =
-          results
+        const {
+          notifications,
+          user,
+          userEmailsData,
+          groupsAndEnterpriseBannerAssignment,
+          userIsMemberOfGroupSubscription,
+        } = results
 
         if (
           user &&
-          primaryEmailCheckActive &&
           UserPrimaryEmailCheckHandler.requiresPrimaryEmailCheck(user)
         ) {
           return res.redirect('/user/emails/primary-email-check')
@@ -656,6 +703,17 @@ const ProjectController = {
           )
         }
 
+        const hasPaidAffiliation = userAffiliations.some(
+          affiliation => affiliation.licence && affiliation.licence !== 'free'
+        )
+
+        // groupsAndEnterpriseBannerAssignment.variant = 'default' | 'empower' | 'save' | 'did-you-know'
+        const showGroupsAndEnterpriseBanner =
+          groupsAndEnterpriseBannerAssignment.variant !== 'default' &&
+          Features.hasFeature('saas') &&
+          !userIsMemberOfGroupSubscription &&
+          !hasPaidAffiliation
+
         ProjectController._injectProjectUsers(projects, (error, projects) => {
           if (error != null) {
             return next(error)
@@ -680,6 +738,9 @@ const ProjectController = {
             showThinFooter: true, // don't show the fat footer on the projects dashboard, as there's a fixed space available
             usersBestSubscription: results.usersBestSubscription,
             survey: results.survey,
+            showGroupsAndEnterpriseBanner,
+            groupsAndEnterpriseBannerVariant:
+              groupsAndEnterpriseBannerAssignment.variant,
           }
 
           const paidUser =
@@ -884,16 +945,15 @@ const ProjectController = {
             }
           )
         },
-        newSourceEditorAssignment(cb) {
+        legacySourceEditorAssignment(cb) {
           SplitTestHandler.getAssignment(
             req,
             res,
-            'source-editor',
-            {},
+            'source-editor-legacy',
             (error, assignment) => {
               // do not fail editor load if assignment fails
               if (error) {
-                cb(null)
+                cb(null, { variant: 'default' })
               } else {
                 cb(null, assignment)
               }
@@ -904,39 +964,8 @@ const ProjectController = {
           SplitTestHandler.getAssignment(
             req,
             res,
-            'pdfjs',
+            'pdfjs-31',
             {},
-            (error, assignment) => {
-              // do not fail editor load if assignment fails
-              if (error) {
-                cb(null, { variant: 'default' })
-              } else {
-                cb(null, assignment)
-              }
-            }
-          )
-        },
-        dictionaryEditorAssignment(cb) {
-          SplitTestHandler.getAssignment(
-            req,
-            res,
-            'dictionary-editor',
-            {},
-            (error, assignment) => {
-              // do not fail editor load if assignment fails
-              if (error) {
-                cb(null, { variant: 'default' })
-              } else {
-                cb(null, assignment)
-              }
-            }
-          )
-        },
-        interstitialPaymentFromPaywallAssignment(cb) {
-          SplitTestHandler.getAssignment(
-            req,
-            res,
-            'interstitial-payment-from-paywall',
             (error, assignment) => {
               // do not fail editor load if assignment fails
               if (error) {
@@ -952,40 +981,6 @@ const ProjectController = {
             req,
             res,
             'latex-log-parser',
-            (error, assignment) => {
-              // do not fail editor load if assignment fails
-              if (error) {
-                cb(null, { variant: 'default' })
-              } else {
-                cb(null, assignment)
-              }
-            }
-          )
-        },
-        compileTimeWarningAssignment: [
-          'user',
-          (results, cb) => {
-            if (results.user?.features?.compileTimeout <= 60) {
-              SplitTestHandler.getAssignment(
-                req,
-                res,
-                'compile-time-warning',
-                {},
-                () => {
-                  // do not fail editor load if assignment fails
-                  cb()
-                }
-              )
-            } else {
-              cb()
-            }
-          },
-        ],
-        linkSharingUpgradePromptAssignment(cb) {
-          SplitTestHandler.getAssignment(
-            req,
-            res,
-            'link-sharing-upgrade-prompt',
             (error, assignment) => {
               // do not fail editor load if assignment fails
               if (error) {
@@ -1056,6 +1051,91 @@ const ProjectController = {
             }
           )
         },
+        editorDocumentationButton(cb) {
+          SplitTestHandler.getAssignment(
+            req,
+            res,
+            'documentation-on-editor',
+            (error, assignment) => {
+              // do not fail editor load if assignment fails
+              if (error) {
+                cb(null, { variant: 'default' })
+              } else {
+                cb(null, assignment)
+              }
+            }
+          )
+        },
+        richTextAssignment(cb) {
+          SplitTestHandler.getAssignment(
+            req,
+            res,
+            'rich-text',
+            (error, assignment) => {
+              // do not fail editor load if assignment fails
+              if (error) {
+                cb(null, { variant: 'default' })
+              } else {
+                cb(null, assignment)
+              }
+            }
+          )
+        },
+        accessCheckForOldCompileDomainAssigment(cb) {
+          SplitTestHandler.getAssignment(
+            req,
+            res,
+            'access-check-for-old-compile-domain',
+            () => {
+              // We'll pick up the assignment from the res.locals assignment.
+              cb()
+            }
+          )
+        },
+        userContentDomainAccessCheckAssigment(cb) {
+          SplitTestHandler.getAssignment(
+            req,
+            res,
+            'user-content-domain-access-check',
+            () => {
+              // We'll pick up the assignment from the res.locals assignment.
+              cb()
+            }
+          )
+        },
+        userContentDomainAccessCheckDelayAssigment(cb) {
+          SplitTestHandler.getAssignment(
+            req,
+            res,
+            'user-content-domain-access-check-delay',
+            () => {
+              // We'll pick up the assignment from the res.locals assignment.
+              cb()
+            }
+          )
+        },
+        userContentDomainAccessCheckMaxChecksAssigment(cb) {
+          SplitTestHandler.getAssignment(
+            req,
+            res,
+            'user-content-domain-access-check-max-checks',
+            () => {
+              // We'll pick up the assignment from the res.locals assignment.
+              cb()
+            }
+          )
+        },
+        reportUserContentDomainAccessCheckErrorAssigment(cb) {
+          SplitTestHandler.getAssignment(
+            req,
+            res,
+            'report-user-content-domain-access-check-error',
+            () => {
+              // We'll pick up the assignment from the res.locals assignment.
+              cb()
+            }
+          )
+        },
       },
       (
         err,
@@ -1069,10 +1149,10 @@ const ProjectController = {
           isTokenMember,
           isInvitedMember,
           brandVariation,
-          newSourceEditorAssignment,
+          legacySourceEditorAssignment,
           pdfjsAssignment,
-          dictionaryEditorAssignment,
           editorLeftMenuAssignment,
+          richTextAssignment,
         }
       ) => {
         if (err != null) {
@@ -1149,10 +1229,11 @@ const ProjectController = {
 
             const detachRole = req.params.detachRole
 
-            const showNewSourceEditorOption =
-              newSourceEditorAssignment?.variant === 'codemirror' ||
-              user.betaProgram ||
-              shouldDisplayFeature('new_source_editor', false) // also allow override via ?new_source_editor=true
+            const showLegacySourceEditor =
+              !Features.hasFeature('saas') ||
+              legacySourceEditorAssignment.variant === 'default' ||
+              // Also allow override via legacy_source_editor=true in query string
+              shouldDisplayFeature('legacy_source_editor')
 
             const editorLeftMenuReact =
               editorLeftMenuAssignment?.variant === 'react'
@@ -1169,10 +1250,6 @@ const ProjectController = {
                 ? req.query.galileoFeatures.split(',').map(f => f.trim())
                 : ['all']
             const galileoPromptWords = req.query?.galileoPromptWords || ''
-
-            const dictionaryEditorEnabled =
-              !Features.hasFeature('saas') ||
-              dictionaryEditorAssignment?.variant === 'enabled'
 
             // Persistent upgrade prompts
             // in header & in share project modal
@@ -1248,9 +1325,8 @@ const ProjectController = {
               wsUrl,
               showSupport: Features.hasFeature('support'),
               pdfjsVariant: pdfjsAssignment.variant,
-              dictionaryEditorEnabled,
               debugPdfDetach,
-              showNewSourceEditorOption,
+              showLegacySourceEditor,
               showSymbolPalette,
               galileoEnabled,
               galileoFeatures,
@@ -1260,6 +1336,8 @@ const ProjectController = {
               showUpgradePrompt,
               fixedSizeDocument: true,
               useOpenTelemetry: Settings.useOpenTelemetryClient,
+              showCM6SwitchAwaySurvey: Settings.showCM6SwitchAwaySurvey,
+              richTextVariant: richTextAssignment.variant,
             })
             timer.done()
           }

@@ -59,7 +59,7 @@
   text-align: center;
   vertical-align: middle;
   cursor: pointer;
-  border: @border-size solid transparent;
+  border: 0 solid transparent;
   white-space: nowrap;
   .button-size(
     @padding-base-vertical; @padding-base-horizontal; @font-size-base;
@@ -301,4 +301,20 @@ input[type='button'] {
   &.btn-block {
     width: 100%;
   }
+}
+
+.login-btn when(@is-new-css = true) {
+  .btn;
+  .btn-secondary;
+  position: relative;
+  padding-left: 20px;
+  padding-right: 0;
+}
+
+.login-btn when(@is-new-css = false) {
+  .btn;
+  .btn-default;
+  position: relative;
+  padding-left: 20px;
+  padding-right: 0;
 }

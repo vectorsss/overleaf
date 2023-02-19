@@ -20,6 +20,7 @@ const { User } = require('../../models/User')
 const SplitTestHandler = require('../SplitTests/SplitTestHandler')
 const UserPrimaryEmailCheckHandler = require('../User/UserPrimaryEmailCheckHandler')
 const UserController = require('../User/UserController')
+const LimitationsManager = require('../Subscription/LimitationsManager')
 
 /** @typedef {import("./types").GetProjectsRequest} GetProjectsRequest */
 /** @typedef {import("./types").GetProjectsResponse} GetProjectsResponse */
@@ -123,26 +124,8 @@ async function projectListReactPage(req, res, next) {
       logger.err({ err: error, userId }, 'Failed to load the active survey')
     }
 
-    try {
-      const assignment = await SplitTestHandler.promises.getAssignment(
-        req,
-        res,
-        'primary-email-check'
-      )
-      const primaryEmailCheckActive = assignment.variant === 'active'
-
-      if (
-        user &&
-        primaryEmailCheckActive &&
-        UserPrimaryEmailCheckHandler.requiresPrimaryEmailCheck(user)
-      ) {
-        return res.redirect('/user/emails/primary-email-check')
-      }
-    } catch (error) {
-      logger.warn(
-        { err: error },
-        'failed to get "primary-email-check" split test assignment'
-      )
+    if (user && UserPrimaryEmailCheckHandler.requiresPrimaryEmailCheck(user)) {
+      return res.redirect('/user/emails/primary-email-check')
     }
   }
 
@@ -287,6 +270,48 @@ async function projectListReactPage(req, res, next) {
     status: prefetchedProjectsBlob ? 'success' : 'too-slow',
   })
 
+  let showGroupsAndEnterpriseBanner = false
+  let groupsAndEnterpriseBannerAssignment
+
+  try {
+    groupsAndEnterpriseBannerAssignment =
+      await SplitTestHandler.promises.getAssignment(
+        req,
+        res,
+        'groups-and-enterprise-banner'
+      )
+  } catch (error) {
+    logger.error(
+      { err: error },
+      'failed to get "groups-and-enterprise-banner" split test assignment'
+    )
+  }
+
+  let userIsMemberOfGroupSubscription = false
+
+  try {
+    const userIsMemberOfGroupSubscriptionPromise =
+      await LimitationsManager.promises.userIsMemberOfGroupSubscription(user)
+
+    userIsMemberOfGroupSubscription =
+      userIsMemberOfGroupSubscriptionPromise.isMember
+  } catch (error) {
+    logger.error(
+      { err: error },
+      'Failed to check whether user is a member of group subscription'
+    )
+  }
+
+  const hasPaidAffiliation = userAffiliations.some(
+    affiliation => affiliation.licence && affiliation.licence !== 'free'
+  )
+
+  showGroupsAndEnterpriseBanner =
+    (groupsAndEnterpriseBannerAssignment?.variant ?? 'default') !== 'default' &&
+    Features.hasFeature('saas') &&
+    !userIsMemberOfGroupSubscription &&
+    !hasPaidAffiliation
+
   res.render('project/list-react', {
     title: 'your_projects',
     usersBestSubscription,
@@ -301,6 +326,10 @@ async function projectListReactPage(req, res, next) {
     tags,
     portalTemplates,
     prefetchedProjectsBlob,
+    showGroupsAndEnterpriseBanner,
+    groupsAndEnterpriseBannerVariant:
+      groupsAndEnterpriseBannerAssignment?.variant ?? 'default',
+    projectDashboardReact: true, // used in navbar
   })
 }
 

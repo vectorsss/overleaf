@@ -61,7 +61,8 @@ export default function TransferOwnershipModal({ member, cancel }) {
         <div className="modal-footer-right">
           <Button
             type="button"
-            bsStyle="default"
+            bsStyle={null}
+            className="btn-secondary"
             onClick={cancel}
             disabled={inflight}
           >
@@ -69,7 +70,7 @@ export default function TransferOwnershipModal({ member, cancel }) {
           </Button>
           <Button
             type="button"
-            bsStyle="success"
+            bsStyle="primary"
             onClick={confirm}
             disabled={inflight}
           >

@@ -22,9 +22,17 @@ async function setNewUserPassword(req, res, next) {
 
   const err = AuthenticationManager.validatePassword(password, email)
   if (err) {
-    return res.status(400).json({
-      message: { text: err.message },
-    })
+    if (err?.info?.code === 'contains_email') {
+      return res.status(400).json({
+        message: {
+          text: req.i18n.translate('invalid_password_contains_email'),
+        },
+      })
+    } else {
+      return res.status(400).json({
+        message: { text: err.message },
+      })
+    }
   }
 
   passwordResetToken = passwordResetToken.trim()
@@ -82,6 +90,12 @@ async function setNewUserPassword(req, res, next) {
       return res.status(400).json({
         message: {
           key: 'password-must-be-different',
+        },
+      })
+    } else if (error.name === 'PasswordReusedError') {
+      return res.status(400).json({
+        message: {
+          key: 'password-must-be-strong',
         },
       })
     } else {

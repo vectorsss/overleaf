@@ -274,6 +274,9 @@ module.exports = {
   maxEntitiesPerProject: 2000,
 
   maxUploadSize: 50 * 1024 * 1024, // 50 MB
+  multerOptions: {
+    preservePath: process.env.MULTER_PRESERVE_PATH,
+  },
 
   // start failing the health check if active handles exceeds this limit
   maxActiveHandles: process.env.MAX_ACTIVE_HANDLES
@@ -441,7 +444,7 @@ module.exports = {
   // opts are from http://antelle.github.io/passfield
   passwordStrengthOptions: {
     length: {
-      min: 6,
+      min: 8,
       // Bcrypt does not support longer passwords than that.
       max: 72,
     },
@@ -532,6 +535,8 @@ module.exports = {
 
   // site should be open by default
   siteIsOpen: process.env.SITE_OPEN !== 'false',
+  // status file for closing/opening the site at run-time, polled every 5s
+  siteMaintenanceFile: process.env.SITE_MAINTENANCE_FILE,
 
   // Use a single compile directory for all users in a project
   // (otherwise each user has their own directory)
@@ -539,6 +544,7 @@ module.exports = {
 
   // Domain the client (pdfjs) should download the compiled pdf from
   pdfDownloadDomain: process.env.PDF_DOWNLOAD_DOMAIN, // "http://clsi-lb:3014"
+  compilesUserContentDomain: process.env.COMPILES_USER_CONTENT_DOMAIN,
 
   // By default turn on feature flag, can be overridden per request.
   enablePdfCaching: process.env.ENABLE_PDF_CACHING === 'true',
@@ -785,7 +791,12 @@ module.exports = {
     editorLeftMenuSync: [],
   },
 
-  moduleImportSequence: ['launchpad', 'server-ce-scripts', 'user-activate'],
+  moduleImportSequence: [
+    'launchpad',
+    'server-ce-scripts',
+    'user-activate',
+    'history-migration',
+  ],
 
   csp: {
     enabled: process.env.CSP_ENABLED === 'true',
@@ -798,6 +809,9 @@ module.exports = {
   unsupportedBrowsers: {
     ie: '<=11',
   },
+
+  // ID of the IEEE brand in the rails app
+  ieeeBrandId: intFromEnv('IEEE_BRAND_ID', 15),
 }
 
 module.exports.mergeWith = function (overrides) {

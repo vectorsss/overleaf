@@ -17,7 +17,7 @@ function PdfCompileButtonInner({
 }: PdfCompileButtonInnerProps) {
   const { t } = useTranslation()
 
-  const compileButtonLabel = compiling ? t('compiling') + '…' : t('recompile')
+  const compileButtonLabel = compiling ? `${t('compiling')}…` : t('recompile')
 
   return (
     <Tooltip
@@ -37,6 +37,7 @@ function PdfCompileButtonInner({
         onClick={() => startCompile()}
         aria-label={compileButtonLabel}
         disabled={compiling}
+        data-ol-loading={compiling}
       >
         <Icon type="refresh" spin={compiling} />
         <span className="toolbar-hide-medium toolbar-hide-small btn-recompile-label">

@@ -4,6 +4,29 @@
   including About and Blog
 */
 .cms-page {
+  &.page-style {
+    /*
+    Links and Buttons
+  */
+
+    a {
+      color: @link-color;
+      &:hover {
+        color: @link-hover-color;
+      }
+    }
+    // correct color property set on <a> above:
+    .reset-btns;
+    .alert {
+      .alert;
+    }
+    .alert-info {
+      .btn-info {
+        .btn-alert-info;
+      }
+    }
+  }
+
   padding-bottom: 0;
   img {
     height: auto;
@@ -116,6 +139,9 @@
     }
     .quote-by-position {
       color: @content-secondary;
+    }
+    .quote-picture-and-person {
+      display: flex;
     }
   }
 
@@ -309,6 +335,47 @@
     i {
       color: @green;
       font-size: 21px;
+    }
+  }
+}
+
+.svg-arrow-icon {
+  position: relative;
+  left: 4px;
+  bottom: 1px;
+}
+
+.vertically-center-col {
+  // remove margin to better vertically align
+  // some elements need to be nested within a container, and others are directly within .no-card/.card
+  .card:first-child,
+  .no-card:first-child {
+    .cms-element-container {
+      > *:first-child {
+        margin-top: 0;
+      }
+    }
+    > *:first-child:not(.cms-element-container) {
+      margin-top: 0;
+    }
+  }
+  .card:last-child,
+  .no-card:last-child {
+    .cms-element-container {
+      > *:last-child {
+        margin-bottom: 0;
+      }
+    }
+    > *:last-child:not(.cms-element-container) {
+      margin-bottom: 0;
+    }
+  }
+
+  @media (min-width: @screen-sm-min) {
+    display: flex;
+
+    div[class*='col-'] {
+      align-self: center;
     }
   }
 }
