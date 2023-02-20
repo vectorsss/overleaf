@@ -4,7 +4,8 @@ set -ex
 
 # Prefer Debian packages over Ubuntu packages
 echo 'APT::Default-Release "buster";' >/etc/apt/apt.conf.d/default-release
-
+apt update
+apt upgrade -y gpg gnupg
 # The following aspell packages exist in Ubuntu but not Debian:
 # aspell-af, aspell-id, aspell-nr, aspell-ns, aspell-st, aspell-tn, aspell-ts, aspell-xh
 echo "deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ focal main universe" > /etc/apt/sources.list.d/focal-amd.list

@@ -173,7 +173,7 @@ async function _createBlankProject(
   // (to allow scripted creation of projects without full project history)
   const historyId = project.overleaf.history.id
   if (
-    Settings.apis.project_history.displayHistoryForNewProjects &&
+    Settings.apis.project_history &&
     historyId != null
   ) {
     project.overleaf.history.display = true

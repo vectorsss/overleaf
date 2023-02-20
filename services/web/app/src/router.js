@@ -249,12 +249,13 @@ function initialize(webRouter, privateApiRouter, publicApiRouter) {
 
   webRouter.get('/login', UserPagesController.loginPage)
   AuthenticationController.addEndpointToLoginWhitelist('/login')
-
   webRouter.post(
     '/login',
     CaptchaMiddleware.validateCaptcha('login'),
     AuthenticationController.passportLogin
   )
+
+  webRouter.get("/caslogin", UserPagesController.casloginPage)
 
   if (Settings.enableLegacyLogin) {
     AuthenticationController.addEndpointToLoginWhitelist('/login/legacy')

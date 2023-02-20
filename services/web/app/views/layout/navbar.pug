@@ -98,6 +98,8 @@ nav.navbar.navbar-default.navbar-main
 					// logged out
 					if !getSessionUser()
 						// register link
+						li
+							a(href="https://www.baidu.com") #{translate('Templates')}
 						if hasFeature('registration-page')
 							li
 								a(
@@ -122,6 +124,8 @@ nav.navbar.navbar-default.navbar-main
 
 					// projects link and account menu
 					if getSessionUser()
+						li
+							a(href="https://www.baidu.com") #{translate('Templates')}
 						li
 							a(href="/project") #{translate('Projects')}
 						li.dropdown(dropdown)

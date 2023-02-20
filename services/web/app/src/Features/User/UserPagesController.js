@@ -141,6 +141,20 @@ const UserPagesController = {
     })
   },
 
+  casloginPage(req, res) {
+    // if user is being sent to /login with explicit redirect (redir=/foo),
+    // such as being sent from the editor to /login, then set the redirect explicitly
+    if (
+      req.query.redir != null &&
+      AuthenticationController._getRedirectFromSession(req) == null
+    ) {
+      AuthenticationController.setRedirectInSession(req, req.query.redir)
+    }
+    res.render('user/caslogin', {
+      title: 'login',
+    })
+  },
+
   /**
    * Landing page for users who may have received one-time login
    * tokens from the read-only maintenance site.
