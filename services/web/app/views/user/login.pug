@@ -8,7 +8,7 @@ block content
 					.card
 						.page-header
 							h1 #{translate("log_in")}
-						button.btn-primary.btn(onClick="location='https://passport.ustc.edu.cn/login?service=https%3A%2F%2Flatex.ustc.edu.cn%2Fcaslogin'" style="margin-bottom: 30px;") 中国科大统一身份认证
+						button.btn-primary.btn(onClick="location='https://passport.ustc.edu.cn/dev/login?service=https%3A%2F%2Flatex.ustc.edu.cn%2Fcaslogin'" style="margin-bottom: 30px;") 中国科大统一身份认证
 						form(data-ol-async-form, name="loginForm", action='/login', method="POST")
 							input(name='_csrf', type='hidden', value=csrfToken)
 							+formMessages()

@@ -170,14 +170,14 @@ const UserPagesController = {
       return
     }
   
-    let cas_validate = "https://passport.ustc.edu.cn/serviceValidate"
+    let cas_validate = "https://passport.ustc.edu.cn/dev/serviceValidate"
     let service_str = "https://latex.ustc.edu.cn/caslogin"
 
     let queryPath = new URL(cas_validate)
     queryPath.searchParams.append("ticket", ticket)
     queryPath.searchParams.append("service", service_str)
 
-    http.get(queryPath, (qres) => {
+    https.get(queryPath, (qres) => {
       var html = ""
       qres.on("data",(data)=>{
           html+=data

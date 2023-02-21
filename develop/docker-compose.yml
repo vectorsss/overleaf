@@ -1,3 +1,4 @@
+version: "3.4"
 volumes:
   clsi-cache:
   clsi-output:
@@ -32,7 +33,7 @@ services:
     user: root
     volumes:
       - ${PWD}/compiles:/overleaf/services/clsi/compiles
-      - ${DOCKER_SOCKET_PATH:-/var/run/docker.sock}:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
       - clsi-cache:/overleaf/services/clsi/cache
       - clsi-output:/overleaf/services/clsi/output
 
@@ -152,6 +153,6 @@ services:
       target: dev
     command: ["npx", "webpack", "serve", "--config", "webpack.config.dev-env.js"]
     ports:
-      - "127.0.0.1:18888:3808"
+      - "127.0.0.1:3000:3808"
     volumes:
       - ./webpack.config.dev-env.js:/overleaf/services/web/webpack.config.dev-env.js
