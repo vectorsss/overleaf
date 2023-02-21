@@ -99,6 +99,7 @@ ENV SHARELATEX_HISTORY_CHUNKS_BUCKET "/var/lib/sharelatex/data/history/overleaf-
 ENV SHARELATEX_HISTORY_ZIPS_BUCKET "/var/lib/sharelatex/data/history/overleaf-zips"
 ENV SHARELATEX_HISTORY_ANALYTICS_BUCKET "/var/lib/sharelatex/data/history/overleaf-analytics"
 ENV PATH="/usr/local/texlive/2022/bin/x86_64-linux:${PATH}"
+ENV SHARELATEX_SITE_LANGUAGE "zh-CN"
 
 # Phusion Image timeouts before sending SIGKILL to processes
 # ----------------------------------------------------------

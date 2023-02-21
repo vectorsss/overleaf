@@ -103,7 +103,11 @@ module.exports = HistoryManager = {
     const qs = {}
     if (options.background) {
       qs.background = true
-    } // pass on the background flush option if present
+    }
+    if (Settings.apis.project_history.enable != true) {
+      return callback()
+    }
+    // pass on the background flush option if present
     logger.debug({ project_id, url, qs }, 'flushing doc in project history api')
     return request.post({ url, qs }, function (error, res, body) {
       if (error != null) {

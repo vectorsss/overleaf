@@ -42,19 +42,20 @@ function PasswordInnerSection() {
   ) as boolean
   const hasPassword = getMeta('ol-hasPassword') as boolean
 
-  if (isExternalAuthenticationSystemUsed && !isOverleaf) {
-    return <p>{t('password_managed_externally')}</p>
-  }
+  return <p>请使用统一身份认证平台管理密码</p>
+  // if (isExternalAuthenticationSystemUsed && !isOverleaf) {
+  //   return <p>{t('password_managed_externally')}</p>
+  // }
 
-  if (!hasPassword) {
-    return (
-      <p>
-        <a href="/user/password/reset" target="_blank">
-          {t('no_existing_password')}
-        </a>
-      </p>
-    )
-  }
+  // if (!hasPassword) {
+  //   return (
+  //     <p>
+  //       <a href="/user/password/reset" target="_blank">
+  //         {t('no_existing_password')}
+  //       </a>
+  //     </p>
+  //   )
+  // }
 
   return <PasswordForm />
 }
