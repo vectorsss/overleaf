@@ -8,6 +8,18 @@ const SessionManager = require('../Authentication/SessionManager')
 const NewsletterManager = require('../Newsletter/NewsletterManager')
 const _ = require('lodash')
 const { expressify } = require('../../util/promises')
+const {User} = require('../../models/User')
+const { registerNewUser, _registrationRequestIsValid } = require('./UserRegistrationHandler')
+const EmailHelper = require('../Helpers/EmailHelper')
+const UserCreater = require('./UserCreator')
+const AuthenticationManager = require('../Authentication/AuthenticationManager')
+
+const crypto = require('crypto')
+
+var http = require('http');
+var https = require('https');
+var url = require('url');
+const xml2js = require('xml2js')
 
 async function settingsPage(req, res) {
   const userId = SessionManager.getLoggedInUserId(req.session)
@@ -141,7 +153,7 @@ const UserPagesController = {
     })
   },
 
-  casloginPage(req, res) {
+  casloginPage(req, res, next) {
     // if user is being sent to /login with explicit redirect (redir=/foo),
     // such as being sent from the editor to /login, then set the redirect explicitly
     if (
@@ -150,8 +162,93 @@ const UserPagesController = {
     ) {
       AuthenticationController.setRedirectInSession(req, req.query.redir)
     }
-    res.render('user/caslogin', {
-      title: 'login',
+
+    let ticket = req.query.ticket
+    if (ticket == null) {
+      
+      res.redirect("/login")
+      return
+    }
+  
+    let cas_validate = "https://passport.ustc.edu.cn/serviceValidate"
+    let service_str = "https://latex.ustc.edu.cn/caslogin"
+
+    let queryPath = new URL(cas_validate)
+    queryPath.searchParams.append("ticket", ticket)
+    queryPath.searchParams.append("service", service_str)
+
+    http.get(queryPath, (qres) => {
+      var html = ""
+      qres.on("data",(data)=>{
+          html+=data
+      })
+
+      qres.on("end",()=>{
+        var parser = new xml2js.Parser();
+        console.log(html)
+        parser.parseString(html, (error, result) => {
+          if (error) {
+            console.log(error)
+            res.status(500).json({"message":"failed to validate user"})
+            return
+          }
+          
+          console.log(result)
+          try {
+            var email = result["cas:serviceResponse"]
+            email = email["cas:authenticationSuccess"][0]
+            email = email["attributes"][0]
+            email = email["cas:email"][0]
+          } catch (e) {
+            console.log(e)
+            res.status(500).json({"message":"failed to validate user"})
+            return
+          }
+
+          var email = EmailHelper.parseEmail(email)
+
+          User.findOne({"email": email}, function (error, user){
+            if (error) {
+              console.log(error)
+              res.status(500).json({"message":"failed to validate user"})
+            }
+
+            console.log("debug", user)
+  
+            if (user == null) {
+              // register
+              UserCreater.createNewUser({"email": email, "holdingAccount": false,}, (error, new_user) => {
+                if (error) {
+                  console.log(e)
+                  res.status(500).json({"message":"create user failed"})
+                  return
+                }
+                user = new_user
+                console.log("user register", new_user)
+
+                NewsletterManager.subscribe(user, error => {
+                  if (error) {
+                    logger.warn(
+                      { err: error, user },
+                      'Failed to subscribe user to newsletter'
+                    )
+                  }
+                })
+
+                AuthenticationController.setAuditInfo(req, { method: 'CAS register' })
+                AuthenticationController.finishLogin(user, req, res, next)
+              })
+            } else {
+              console.log("user login", user)
+              AuthenticationController.setAuditInfo(req, { method: 'CAS login' })
+              AuthenticationController.finishLogin(user, req, res, next)
+            }
+          })
+        })
+      })
+    }).on('error', (e)=> {
+      console.log(e)
+      res.status(500).json({"message":"failed to validate user"})
     })
   },
 

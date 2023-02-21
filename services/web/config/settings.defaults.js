@@ -609,15 +609,16 @@ module.exports = {
     : undefined,
 
   nav: {
-    title: process.env.APP_NAME || 'Overleaf Community Edition',
+    title: process.env.APP_NAME || '中国科大在线 Latex 平台',
 
     hide_powered_by: process.env.NAV_HIDE_POWERED_BY === 'true',
-    left_footer: [],
+    left_footer: [
+    ],
 
     right_footer: [
       {
-        text: "<i class='fa fa-github-square'></i> Fork on GitHub!",
-        url: 'https://github.com/overleaf/overleaf',
+        text: "网络信息中心",
+        url: 'https://ustcnet.ustc.edu.cn/main.htm',
       },
     ],
 
