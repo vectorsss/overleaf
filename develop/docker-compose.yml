@@ -128,7 +128,7 @@ services:
       - ENABLED_LINKED_FILE_TYPES=project_file,project_output_file
       - EMAIL_CONFIRMATION_DISABLED=true
       - NODE_ENV=development
-      - SHARELATEX_ALLOW_PUBLIC_ACCESS=true
+      - SHARELATEX_ALLOW_PUBLIC_ACCESS=false
     command: ["node", "app.js"]
     volumes:
       - sharelatex-data:/var/lib/sharelatex
