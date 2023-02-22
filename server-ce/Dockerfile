@@ -47,8 +47,8 @@ ADD server-ce/msttcorefonts /usr/share/fonts/ /usr/share/fonts/truetype/msttcore
 RUN fc-cache
 
 # add pyments
-RUN apt update && apt install python-pygments python3-pygments
-RUN echo "shell_escape = t" >> /usr/local/texlive/2022/texmf.cnf
+# RUN apt update && apt install python-pygments python3-pygments
+# RUN echo "shell_escape = t" >> /usr/local/texlive/2022/texmf.cnf
 
 # Configure log rotation
 # ----------------------

@@ -1,8 +1,18 @@
-FROM debian:testing-slim
+FROM debian:testing
 
-RUN apt-get update
-RUN apt-cache depends texlive-full | grep "Depends: " | grep -v -- "-doc" | grep -v -- "-lang-" | sed 's/Depends: //' | xargs apt-get install -y --no-install-recommends
-RUN apt-get install -y --no-install-recommends fontconfig inkscape pandoc python3-pygments
+ENV TEXMFVAR=/var/lib/sharelatex/tmp/texmf-var
+
+RUN echo "deb http://mirrors.ustc.edu.cn/debian/ testing main" > /etc/apt/sources.list
+RUN echo "deb http://mirrors.ustc.edu.cn/debian/ testing-updates main" >> /etc/apt/sources.list
+RUN apt-get update && apt install -y --no-install-recommends fontconfig inkscape pandoc python3-pygments
+
+# add truetype fonts
+RUN mkdir -p /usr/share/fonts/truetype
+ADD ./msttcorefonts /usr/share/fonts/truetype
+RUN fc-cache
+# RUN apt-cache depends texlive-full | grep "Depends: " | grep -v -- "-doc" | grep -v -- "-lang-" | sed 's/Depends: //' | xargs apt-get install -y --no-install-recommends
+
+RUN apt install -y texlive-full texlive-lang-cjk texlive-lang-chinese texlive-lang-japanese texlive-lang-korean texlive-font-utils texlive-fonts-extra 	texlive-extra-utils texlive-science texlive-*
 
 RUN useradd tex
 USER tex

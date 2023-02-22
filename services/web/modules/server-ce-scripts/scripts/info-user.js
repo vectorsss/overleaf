@@ -21,7 +21,7 @@ async function main() {
     UserGetter.getUser({ email },  function (error, user) {
         if (error) {
             return reject(error)
-        }c
+        }
 
         console.log(user._id, user.isAdmin, user.email, user.signUpDate, user.lastLoggedIn, user.lastLoginIp, user.loginCount)
         resolve()
