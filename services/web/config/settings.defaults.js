@@ -530,6 +530,8 @@ module.exports = {
   // public projects, /learn, /templates, about pages, etc.
   allowPublicAccess: process.env.SHARELATEX_ALLOW_PUBLIC_ACCESS === 'true',
 
+  casURL: process.env.CASURL || "https://passport.ustc.edu.cn/dev/",
+
   // editor should be open by default
   editorIsOpen: process.env.EDITOR_OPEN !== 'false',
 

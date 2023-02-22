@@ -42,6 +42,13 @@ ADD server-ce/nginx/nginx.conf.template /etc/nginx/templates/nginx.conf.template
 ADD server-ce/nginx/sharelatex.conf /etc/nginx/sites-enabled/sharelatex.conf
 ADD server-ce/nginx/clsi-nginx.conf /etc/nginx/sites-enabled/clsi-nginx.conf
 
+# add truetype fonts
+ADD server-ce/msttcorefonts /usr/share/fonts/ /usr/share/fonts/truetype/msttcorefonts
+RUN fc-cache
+
+# add pyments
+RUN apt update && apt install python-pygments python3-pygments
+RUN echo "shell_escape = t" >> /usr/local/texlive/2022/texmf.cnf
 
 # Configure log rotation
 # ----------------------

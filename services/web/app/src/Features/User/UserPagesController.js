@@ -163,19 +163,21 @@ const UserPagesController = {
       AuthenticationController.setRedirectInSession(req, req.query.redir)
     }
 
-    let ticket = req.query.ticket
-    if (ticket == null) {
-      
-      res.redirect("/login")
-      return
-    }
-  
-    let cas_validate = "https://passport.ustc.edu.cn/dev/serviceValidate"
+    let cas_validate = Settings.casURL + "serviceValidate"
+    let cas_login = Settings.casURL + "login"
     let service_str = "https://latex.ustc.edu.cn/caslogin"
 
+    let ticket = req.query.ticket
+    if (ticket == null) {
+      let queryPath = new URL(cas_login)
+      queryPath.searchParams.append("service", service_str)
+      res.redirect(queryPath.toString())
+      return
+    }
+
     let queryPath = new URL(cas_validate)
-    queryPath.searchParams.append("ticket", ticket)
     queryPath.searchParams.append("service", service_str)
+    queryPath.searchParams.append("ticket", ticket)
 
     https.get(queryPath, (qres) => {
       var html = ""
