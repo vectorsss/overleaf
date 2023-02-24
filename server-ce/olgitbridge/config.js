@@ -8,7 +8,7 @@ config.olServer =  process.env.SERVER || 'http://localhost';
 
 // used if all the working directories in one place
 // must be ending with '/'
-config.baseDir = '/var/olgitbridge/';
+config.baseDir = '/var/olgitbridge/data/';
 
 // blueprint of the overleaf version (only differences to git to be uploaded again)
 config.bluesDir = config.baseDir + 'blues/';

@@ -1,7 +1,13 @@
 version: '2.2'
+volumes:
+  data:
 services:
   git-bridge:
+    image: "olgitbridge"
+    restart: "always"
     volumes:
-      - "data:/var/olgitbridge/:/var/olgitbridge/"
+      - "data:/var/olgitbridge/data"
+    ports:
+      - 5000:5000
     environment:
       SERVER: "https://latex.ustc.edu.cn"

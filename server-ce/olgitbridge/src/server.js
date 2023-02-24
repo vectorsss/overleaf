@@ -221,48 +221,56 @@ const serve =
 
 	const client = olops.client( );
 	client.count = count;
-	const auth = await handleAuth( req, res, client, project_id );
-	if( !auth ) return;
+	try {
+		const auth = await handleAuth( req, res, client, project_id );
+		if( !auth ) return;
 
-	const pflag = await prepareProject( count, project_id );
-	const project = projects[ project_id ];
-	{
-		const now = Date.now( );
-		const lastSync = project.lastSync;
-		if( !lastSync || now - lastSync >= downSyncTimeout )
+		const pflag = await prepareProject( count, project_id );
+		const project = projects[ project_id ];
 		{
-			project.lastSync = now;
-			if( await downsync( client, olServer, project ) )
+			const now = Date.now( );
+			const lastSync = project.lastSync;
+			if( !lastSync || now - lastSync >= downSyncTimeout )
 			{
-				// downsync returns true if it wasnt cached
-				await git.save( count, project.padDir, 'synced by olgitbridge' );
+				project.lastSync = now;
+				if( await downsync( client, olServer, project ) )
+				{
+					// downsync returns true if it wasnt cached
+					await git.save( count, project.padDir, 'synced by olgitbridge' );
+				}
+			}
+			else
+			{
+				// FIXME in case of git-receive-pack it should *ALWAYS* sync before.
+				console.log( count, 'skipping downsync as last was ', (now - lastSync) / 1000 ,'s ago' );
 			}
 		}
-		else
+	
+		// potentially unzips body stream
+		if( req.headers[ 'content-encoding' ] === 'gzip' )
 		{
-			// FIXME in case of git-receive-pack it should *ALWAYS* sync before.
-			console.log( count, 'skipping downsync as last was ', (now - lastSync) / 1000 ,'s ago' );
+			req = req.pipe( zlib.createGunzip( ) );
 		}
+	
+		req.pipe(
+			backend( url, ( err, service ) =>
+				beginRemoteGitRequest( err, service, client, project_id, res, auth, pflag )
+			)
+		).pipe( res );
+		return
+	} catch (e) {
+		console.log(e);
+		req.pipe(res);
+		return
 	}
-
-	// potentially unzips body stream
-	if( req.headers[ 'content-encoding' ] === 'gzip' )
-	{
-		req = req.pipe( zlib.createGunzip( ) );
-	}
-
-	req.pipe(
-		backend( url, ( err, service ) =>
-			beginRemoteGitRequest( err, service, client, project_id, res, auth, pflag )
-		)
-	).pipe( res );
 };
 
 const start =
 	async function( )
-{
+{	
+	console.log("upper server:", config.olServer);
 	// creates the working dirs, ignores already exisiting errors
-	for( let dir of [ reposDir, padsDir, bluesDir ] )
+	for( let dir of [ reposDir, padsDir, bluesDir, hashDir ] )
 	{
 		try{ await fs.mkdir( dir ); }
 		catch( e ) { if( e.code !== 'EEXIST' ) throw e; }
