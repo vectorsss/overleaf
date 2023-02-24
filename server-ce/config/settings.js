@@ -282,6 +282,7 @@ const settings = {
   defaultFeatures: {
     collaborators: -1,
     dropbox: true,
+    github: true,
     versioning: true,
     compileTimeout: parseIntOrFail(process.env.COMPILE_TIMEOUT || 300),
     compileGroup: 'standard',
