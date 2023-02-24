@@ -62,6 +62,13 @@ aside#left-menu.full-size(
 					show="show"
 				)
 
+			li()
+				a(
+					onClick="alert('Git 仓库地址为：'+ document.URL.replace('project','git')+'.git')"
+				)
+					i.fa.fa-fw.fa-git
+					span &nbsp;&nbsp; Git Sync
+
 	if (moduleIncludesAvailable("editorLeftMenu:sync"))
 		div(ng-show="!anonymous")
 			h4() #{translate("sync")}

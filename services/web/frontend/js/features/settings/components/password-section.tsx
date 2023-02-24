@@ -29,6 +29,7 @@ function PasswordSection() {
   return (
     <>
       <h3>{t('change_password')}</h3>
+      <h4>如需使用 Git Sync 功能，请设置密码</h4>
       <PasswordInnerSection />
     </>
   )
