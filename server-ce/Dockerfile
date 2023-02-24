@@ -43,7 +43,7 @@ ADD server-ce/nginx/sharelatex.conf /etc/nginx/sites-enabled/sharelatex.conf
 ADD server-ce/nginx/clsi-nginx.conf /etc/nginx/sites-enabled/clsi-nginx.conf
 
 # add truetype fonts
-ADD server-ce/msttcorefonts /usr/share/fonts/ /usr/share/fonts/truetype/msttcorefonts
+ADD develop/texlive/msttcorefonts /usr/share/fonts/truetype/msttcorefonts
 RUN fc-cache
 
 # add pyments

@@ -1093,6 +1093,7 @@ function initialize(webRouter, privateApiRouter, publicApiRouter) {
     AuthorizationMiddleware.ensureUserCanReadProject,
     ChatController.getMessages
   )
+
   webRouter.post(
     '/project/:project_id/messages',
     AuthorizationMiddleware.blockRestrictedUserFromProject,
@@ -1100,6 +1101,58 @@ function initialize(webRouter, privateApiRouter, publicApiRouter) {
     RateLimiterMiddleware.rateLimit(rateLimiters.sendChatMessage),
     ChatController.sendMessage
   )
+
+  // review apis
+  webRouter.get(
+    '/project/:project_id/threads',
+    AuthorizationMiddleware.blockRestrictedUserFromProject,
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    ChatController.getThreads
+  )
+
+  webRouter.post(
+    '/project/:project_id/thread/:thread_id/messages',
+    AuthorizationMiddleware.blockRestrictedUserFromProject,
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    ChatController.sendComment
+  )
+
+  webRouter.post(
+    '/project/:project_id/thread/:thread_id/resolve',
+    AuthorizationMiddleware.blockRestrictedUserFromProject,
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    ChatController.resolveThread
+  )
+
+  webRouter.post(
+    '/project/:project_id/thread/:thread_id/reopen',
+    AuthorizationMiddleware.blockRestrictedUserFromProject,
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    ChatController.reopenThread
+  )
+
+  webRouter.post(
+    '/project/:project_id/thread/:thread_id/messages/:message_id/edit',
+    AuthorizationMiddleware.blockRestrictedUserFromProject,
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    ChatController.editMessage
+  )
+
+  webRouter.delete(
+    '/project/:project_id/thread/:thread_id/messages/:message_id',
+    AuthorizationMiddleware.blockRestrictedUserFromProject,
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    ChatController.deleteMessage
+  )
+
+  webRouter.delete(
+    '/project/:project_id/thread/:thread_id',
+    AuthorizationMiddleware.blockRestrictedUserFromProject,
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    ChatController.deleteThread
+  )
+
+  //review apis end
 
   webRouter.post(
     '/project/:Project_id/references/index',

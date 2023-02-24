@@ -21,7 +21,7 @@ function mergeDeletedDocs(a, b) {
 }
 
 module.exports = ProjectEditorHandler = {
-  trackChangesAvailable: false,
+  trackChangesAvailable: true,
 
   buildProjectModelView(project, members, invites, deletedDocsFromDocstore) {
     let owner, ownerFeatures

@@ -12,7 +12,9 @@ ADD ./msttcorefonts /usr/share/fonts/truetype
 RUN fc-cache
 # RUN apt-cache depends texlive-full | grep "Depends: " | grep -v -- "-doc" | grep -v -- "-lang-" | sed 's/Depends: //' | xargs apt-get install -y --no-install-recommends
 
-RUN apt install -y texlive-full texlive-lang-cjk texlive-lang-chinese texlive-lang-japanese texlive-lang-korean texlive-font-utils texlive-fonts-extra 	texlive-extra-utils texlive-science texlive-*
+RUN apt-cache depends texlive-full | grep "Depends: " | grep -v -- "-doc" | sed 's/Depends: //' | xargs apt-get install -y
+
+# RUN apt install -y texlive-full texlive-lang-cjk texlive-lang-chinese texlive-lang-japanese texlive-lang-korean texlive-font-utils texlive-fonts-extra texlive-extra-utils texlive-science
 
 RUN useradd tex
 USER tex
