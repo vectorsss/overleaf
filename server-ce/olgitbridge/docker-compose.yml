@@ -1,0 +1,7 @@
+version: '2.2'
+services:
+  git-bridge:
+    volumes:
+      - "data:/var/olgitbridge/:/var/olgitbridge/"
+    environment:
+      SERVER: "https://latex.ustc.edu.cn"
