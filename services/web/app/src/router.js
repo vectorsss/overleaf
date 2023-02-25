@@ -1152,6 +1152,18 @@ function initialize(webRouter, privateApiRouter, publicApiRouter) {
     ChatController.deleteThread
   )
 
+  webRouter.delete(
+    '/project/:project_id/doc/:doc_id/thread/:thread_id',
+    AuthorizationMiddleware.blockRestrictedUserFromProject,
+    AuthorizationMiddleware.ensureUserCanReadProject,
+    ChatController.deleteDocThread
+  )
+
+  webRouter.get('/project/:project_id/ranges',
+  AuthorizationMiddleware.blockRestrictedUserFromProject,
+  AuthorizationMiddleware.ensureUserCanReadProject,
+  DocumentController.getAllRanges)
+
   //review apis end
 
   webRouter.post(
@@ -1461,6 +1473,10 @@ function initialize(webRouter, privateApiRouter, publicApiRouter) {
   )
 
   webRouter.get('/unsupported-browser', renderUnsupportedBrowserPage)
+
+  webRouter.get('/learn', (req, res) => {
+    res.redirect("https://www.overleaf.com/learn", 302)
+  })
 
   webRouter.get('*', ErrorController.notFound)
 }

@@ -146,13 +146,11 @@ module.exports = ChatController = {
           return next(err)
         }
         return UserInfoManager.getPersonalInfo(
-          message.user_id,
+          user_id,
           function (err, user) {
             if (err != null) {
               return next(err)
             }
-            message.user = UserInfoController.formatPersonalInfo(user)
-            message.clientId = client_id
             EditorRealTimeController.emitToRoom(
               project_id,
               'reopen-thread',
@@ -245,6 +243,17 @@ module.exports = ChatController = {
         return res.sendStatus(204)
       }
     )
+  },
+
+  deleteDocThread(req, res, next) {
+    const { project_id, doc_id,  thread_id } = req.params
+    const { client_id } = req.body
+    const user_id = SessionManager.getLoggedInUserId(req.session)
+    if (user_id == null) {
+      const err = new Error('no logged-in user')
+      return next(err)
+    }
+    return res.sendStatus(204)
   },
 
   getThreads(req, res, next) {

@@ -22,5 +22,6 @@ COPY services/docstore/ /overleaf/services/docstore/
 
 FROM app
 USER node
+RUN echo "build docstore"
 
 CMD ["node", "--expose-gc", "app.js"]

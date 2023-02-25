@@ -6,6 +6,7 @@ const ProjectEntityUpdateHandler = require('../Project/ProjectEntityUpdateHandle
 const logger = require('@overleaf/logger')
 const _ = require('lodash')
 const { plainTextResponse } = require('../../infrastructure/Response')
+const DocstoreManager = require('../Docstore/DocstoreManager')
 
 function getDocument(req, res, next) {
   const { Project_id: projectId, doc_id: docId } = req.params
@@ -111,4 +112,15 @@ function setDocument(req, res, next) {
   )
 }
 
-module.exports = { getDocument, setDocument }
+function getAllRanges (req, res, next) {
+  const { project_id } = req.params
+  DocstoreManager.getAllRanges(project_id, (error, result) => {
+    logger.debug(error, result)
+    if (error) {
+      return next(error)
+    }
+    res.json(result)
+  })
+}
+
+module.exports = { getDocument, setDocument, getAllRanges }
