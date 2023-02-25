@@ -202,7 +202,7 @@ const UserPagesController = {
             email = email["attributes"][0]
             email = email["cas:email"][0]
             let favour_email = email["cas:email"][0]
-            for (idx in email["cas:email"]) {
+            for (let idx in email["cas:email"]) {
               if (email["cas:email"][idx].includes("ustc")) {
                 favour_email = email["cas:email"][idx];
                 break;
