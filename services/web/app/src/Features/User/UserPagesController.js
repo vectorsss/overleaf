@@ -201,14 +201,14 @@ const UserPagesController = {
             email = email["cas:authenticationSuccess"][0]
             email = email["attributes"][0]
             email = email["cas:email"][0]
-            let favour_email = email["cas:email"][0]
-            for (let idx in email["cas:email"]) {
-              if (email["cas:email"][idx].includes("ustc")) {
-                favour_email = email["cas:email"][idx];
-                break;
-              }
-            }
-            email = favour_email;
+            // let favour_email = email["cas:email"][0]
+            // for (let idx in email["cas:email"]) {
+            //   if (email["cas:email"][idx].includes("ustc")) {
+            //     favour_email = email["cas:email"][idx];
+            //     break;
+            //   }
+            // }
+            // email = favour_email;
           } catch (e) {
             console.log(e)
             res.status(500).json({"message":"failed to validate user"})
