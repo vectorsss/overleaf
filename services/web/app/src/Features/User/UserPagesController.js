@@ -222,8 +222,6 @@ const UserPagesController = {
               console.log(error)
               res.status(500).json({"message":"failed to validate user"})
             }
-
-            console.log("debug", user)
   
             if (user == null) {
               // register
@@ -245,10 +243,41 @@ const UserPagesController = {
                   }
                 })
 
+                try {
+                  var zjhm = result["cas:serviceResponse"]
+                  zjhm = zjhm["cas:authenticationSuccess"][0]
+                  zjhm = zjhm["attributes"][0]
+                  zjhm = zjhm["cas:zjhm"][0]
+                  User.updateOne({"email": user.email}, {$set: {"zjhm": zjhm}}, {}, (error, result) => {
+                    if (error) {
+                      console.log(error);
+                    }
+                    console.log("update zjhm:", user.email, zjhm);
+                  })
+                } catch (e) {
+                  console.log("error update zjhm", e)
+                }
+
                 AuthenticationController.setAuditInfo(req, { method: 'CAS register' })
                 AuthenticationController.finishLogin(user, req, res, next)
               })
             } else {
+
+              try {
+                var zjhm = result["cas:serviceResponse"]
+                zjhm = zjhm["cas:authenticationSuccess"][0]
+                zjhm = zjhm["attributes"][0]
+                zjhm = zjhm["cas:zjhm"][0]
+                User.updateOne({"email": user.email}, {$set: {"zjhm": zjhm}}, {}, (error, result) => {
+                  if (error) {
+                    console.log(error);
+                  }
+                  console.log("update zjhm:", user.email, zjhm);
+                })
+              } catch (e) {
+                console.log("error update zjhm", e)
+              }
+
               console.log("user login", user)
               AuthenticationController.setAuditInfo(req, { method: 'CAS login' })
               AuthenticationController.finishLogin(user, req, res, next)

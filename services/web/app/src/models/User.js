@@ -27,6 +27,7 @@ const UserSchema = new Schema({
   ],
   first_name: { type: String, default: '' },
   last_name: { type: String, default: '' },
+  zjhm: { type: String, default: '' },
   role: { type: String, default: '' },
   institution: { type: String, default: '' },
   hashedPassword: String,
