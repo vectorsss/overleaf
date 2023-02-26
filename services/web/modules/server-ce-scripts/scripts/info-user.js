@@ -23,7 +23,7 @@ async function main() {
             return reject(error)
         }
 
-        console.log(user._id, user.zjhm, user.isAdmin, user.email, user.signUpDate, user.lastLoggedIn, user.lastLoginIp, user.loginCount)
+        console.log(user._id, u.gid, user.zjhm, user.isAdmin, user.email, user.signUpDate, user.lastLoggedIn, user.lastLoginIp, user.loginCount)
         resolve()
     })
 

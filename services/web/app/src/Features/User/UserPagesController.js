@@ -187,7 +187,6 @@ const UserPagesController = {
 
       qres.on("end",()=>{
         var parser = new xml2js.Parser();
-        console.log(html)
         parser.parseString(html, (error, result) => {
           if (error) {
             console.log(error)
@@ -232,7 +231,7 @@ const UserPagesController = {
                   return
                 }
                 user = new_user
-                console.log("user register", new_user)
+                console.log("user register", new_user.email)
 
                 NewsletterManager.subscribe(user, error => {
                   if (error) {
@@ -261,7 +260,7 @@ const UserPagesController = {
                 console.log("update zjhm error:", user.zjhm, zjhm)
               }
 
-              console.log("user login", user)
+              console.log("user login", user.email)
               AuthenticationController.setAuditInfo(req, { method: 'CAS login' })
               AuthenticationController.finishLogin(user, req, res, next)
             }
