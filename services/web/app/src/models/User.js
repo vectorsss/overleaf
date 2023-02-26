@@ -28,6 +28,7 @@ const UserSchema = new Schema({
   first_name: { type: String, default: '' },
   last_name: { type: String, default: '' },
   zjhm: { type: String, default: '' },
+  gid: String,
   role: { type: String, default: '' },
   institution: { type: String, default: '' },
   hashedPassword: String,

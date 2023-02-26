@@ -195,29 +195,29 @@ const UserPagesController = {
             return
           }
           
-          console.log(result)
+          console.log(result);
+          var email = "";
+          var gid = "" ;
+          var zjhm = ""
           try {
-            var email = result["cas:serviceResponse"]
-            email = email["cas:authenticationSuccess"][0]
-            email = email["attributes"][0]
-            email = email["cas:email"][0]
-            // let favour_email = email["cas:email"][0]
-            // for (let idx in email["cas:email"]) {
-            //   if (email["cas:email"][idx].includes("ustc")) {
-            //     favour_email = email["cas:email"][idx];
-            //     break;
-            //   }
-            // }
-            // email = favour_email;
+            var attributes = result["cas:serviceResponse"]
+            attributes = attributes["cas:authenticationSuccess"][0]
+            attributes = attributes["attributes"][0]
+            email = attributes["cas:email"][0]
+            zjhm = attributes["cas:zjhm"][0]
+            gid = attributes["cas:gid"][0]
           } catch (e) {
             console.log(e)
             res.status(500).json({"message":"failed to validate user"})
             return
           }
 
-          var email = EmailHelper.parseEmail(email)
+          email = EmailHelper.parseEmail(email)
+          if (email == "" || gid == "") {
+            res.status(500).json({"message":"failed to validate user from cas server"})
+          }
 
-          User.findOne({"email": email}, function (error, user){
+          User.findOne({$or: [{"gid": gid}, {"email": email} ]}, function (error, user){
             if (error) {
               console.log(error)
               res.status(500).json({"message":"failed to validate user"})
@@ -225,7 +225,7 @@ const UserPagesController = {
   
             if (user == null) {
               // register
-              UserCreater.createNewUser({"email": email, "holdingAccount": false,}, (error, new_user) => {
+              UserCreater.createNewUser({"email": email, "zjhm": zjhm, "gid": gid,"holdingAccount": false,}, (error, new_user) => {
                 if (error) {
                   console.log(e)
                   res.status(500).json({"message":"create user failed"})
@@ -243,39 +243,22 @@ const UserPagesController = {
                   }
                 })
 
-                try {
-                  var zjhm = result["cas:serviceResponse"]
-                  zjhm = zjhm["cas:authenticationSuccess"][0]
-                  zjhm = zjhm["attributes"][0]
-                  zjhm = zjhm["cas:zjhm"][0]
+                AuthenticationController.setAuditInfo(req, { method: 'CAS register' })
+                AuthenticationController.finishLogin(user, req, res, next)
+              })
+            } else {
+              
+              try {
+                if (user.zjhm != zjhm && zjhm != "") {
                   User.updateOne({"email": user.email}, {$set: {"zjhm": zjhm}}, {}, (error, result) => {
                     if (error) {
                       console.log(error);
                     }
                     console.log("update zjhm:", user.email, zjhm);
                   })
-                } catch (e) {
-                  console.log("error update zjhm", e)
                 }
-
-                AuthenticationController.setAuditInfo(req, { method: 'CAS register' })
-                AuthenticationController.finishLogin(user, req, res, next)
-              })
-            } else {
-
-              try {
-                var zjhm = result["cas:serviceResponse"]
-                zjhm = zjhm["cas:authenticationSuccess"][0]
-                zjhm = zjhm["attributes"][0]
-                zjhm = zjhm["cas:zjhm"][0]
-                User.updateOne({"email": user.email}, {$set: {"zjhm": zjhm}}, {}, (error, result) => {
-                  if (error) {
-                    console.log(error);
-                  }
-                  console.log("update zjhm:", user.email, zjhm);
-                })
               } catch (e) {
-                console.log("error update zjhm", e)
+                console.log("update zjhm error:", user.zjhm, zjhm)
               }
 
               console.log("user login", user)
