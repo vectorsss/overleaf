@@ -256,8 +256,17 @@ const UserPagesController = {
                     console.log("update zjhm:", user.email, zjhm);
                   })
                 }
+
+                if ((typeof user.gid == "undefined" || user.gid == "") && gid != "") {
+                  User.updateOne({"email": user.email}, {$set: {"gid": gid}}, {}, (error, result) => {
+                    if (error) {
+                      console.log(error);
+                    }
+                    console.log("update gid:", user.email, gid);
+                  })
+                }
               } catch (e) {
-                console.log("update zjhm error:", user.zjhm, zjhm)
+                console.log("update gid error:", user.gid, gid)
               }
 
               console.log("user login", user.email)
