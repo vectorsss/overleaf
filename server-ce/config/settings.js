@@ -289,6 +289,8 @@ const settings = {
     trackChanges: true,
     templates: true,
     references: true,
+    symbolPalette: true,
+    referencesSearch: true,
   },
 }
 

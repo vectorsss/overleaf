@@ -62,11 +62,13 @@ aside#left-menu.full-size(
 					show="show"
 				)
 
+		h4 #{translate("sync")}
+		ul.list-unstyled.nav
 			li()
 				a(
-					onClick="alert('Git 仓库地址为：'+ document.URL.replace('project','git')+'.git')"
+					onClick="alert('Git 仓库地址为：'+ document.URL.replace('project','git')+'.git （使用邮箱+密码登录）')"
 				)
-					i.fa.fa-fw.fa-git
+					i.fa.fa-fw.fa-code-fork
 					span &nbsp;&nbsp; Git Sync
 
 	if (moduleIncludesAvailable("editorLeftMenu:sync"))
