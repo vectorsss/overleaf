@@ -1,13 +1,18 @@
 import { render } from '@testing-library/react'
+import _ from 'lodash'
 import { SubscriptionDashboardProvider } from '../../../../../frontend/js/features/subscription/context/subscription-dashboard-context'
-import { plans } from '../fixtures/plans'
+import { groupPriceByUsageTypeAndSize, plans } from '../fixtures/plans'
 
 export function renderWithSubscriptionDashContext(
   component: React.ReactElement,
   options?: {
-    metaTags?: { name: string; value: string | object | Array<object> }[]
+    metaTags?: {
+      name: string
+      value: string | object | Array<object> | boolean
+    }[]
     recurlyNotLoaded?: boolean
     queryingRecurly?: boolean
+    currencyCode?: string
   }
 ) {
   const SubscriptionDashboardProviderWrapper = ({
@@ -31,7 +36,20 @@ export function renderWithSubscriptionDashContext(
         Subscription: () => {
           return {
             plan: (planCode: string) => {
-              const plan = plans.find(p => p.planCode === planCode)
+              let plan
+              const isGroupPlan = planCode.includes('group')
+              if (isGroupPlan) {
+                const [, planType, size, usage] = planCode.split('_')
+                const currencyCode = options?.currencyCode || 'USD'
+                plan = _.get(groupPriceByUsageTypeAndSize, [
+                  usage,
+                  planType,
+                  currencyCode,
+                  size,
+                ])
+              } else {
+                plan = plans.find(p => p.planCode === planCode)
+              }
 
               const response = {
                 next: {

@@ -1,6 +1,7 @@
 import {
+  CustomSubscription,
   GroupSubscription,
-  Subscription,
+  RecurlySubscription,
 } from '../../../../../types/subscription/dashboard/subscription'
 const dateformat = require('dateformat')
 const today = new Date()
@@ -12,7 +13,7 @@ const sevenDaysFromTodayFormatted = dateformat(
   'dS mmmm yyyy'
 )
 
-export const annualActiveSubscription: Subscription = {
+export const annualActiveSubscription: RecurlySubscription = {
   manager_ids: ['abc123'],
   member_ids: [],
   invited_emails: [],
@@ -51,7 +52,84 @@ export const annualActiveSubscription: Subscription = {
   },
 }
 
-export const pastDueExpiredSubscription: Subscription = {
+export const annualActiveSubscriptionEuro: RecurlySubscription = {
+  manager_ids: ['abc123'],
+  member_ids: [],
+  invited_emails: [],
+  groupPlan: false,
+  membersLimit: 0,
+  _id: 'def456',
+  admin_id: 'abc123',
+  teamInvites: [],
+  planCode: 'collaborator-annual',
+  recurlySubscription_id: 'ghi789',
+  plan: {
+    planCode: 'collaborator-annual',
+    name: 'Standard (Collaborator) Annual',
+    price_in_cents: 21900,
+    annual: true,
+    featureDescription: [],
+  },
+  recurly: {
+    tax: 4296,
+    taxRate: 0.24,
+    billingDetailsLink: '/user/subscription/recurly/billing-details',
+    accountManagementLink: '/user/subscription/recurly/account-management',
+    additionalLicenses: 0,
+    totalLicenses: 0,
+    nextPaymentDueAt,
+    currency: 'EUR',
+    state: 'active',
+    trialEndsAtFormatted: null,
+    trial_ends_at: null,
+    activeCoupons: [],
+    account: {
+      has_canceled_subscription: { _: 'false', $: { type: 'boolean' } },
+      has_past_due_invoice: { _: 'false', $: { type: 'boolean' } },
+    },
+    displayPrice: '€221.96',
+  },
+}
+
+export const annualActiveSubscriptionPro: RecurlySubscription = {
+  manager_ids: ['abc123'],
+  member_ids: [],
+  invited_emails: [],
+  groupPlan: false,
+  membersLimit: 0,
+  _id: 'def456',
+  admin_id: 'abc123',
+  teamInvites: [],
+  planCode: 'professional',
+  recurlySubscription_id: 'ghi789',
+  plan: {
+    planCode: 'professional',
+    name: 'Professional',
+    price_in_cents: 4500,
+    featureDescription: [],
+  },
+  recurly: {
+    tax: 0,
+    taxRate: 0,
+    billingDetailsLink: '/user/subscription/recurly/billing-details',
+    accountManagementLink: '/user/subscription/recurly/account-management',
+    additionalLicenses: 0,
+    totalLicenses: 0,
+    nextPaymentDueAt,
+    currency: 'USD',
+    state: 'active',
+    trialEndsAtFormatted: null,
+    trial_ends_at: null,
+    activeCoupons: [],
+    account: {
+      has_canceled_subscription: { _: 'false', $: { type: 'boolean' } },
+      has_past_due_invoice: { _: 'false', $: { type: 'boolean' } },
+    },
+    displayPrice: '$42.00',
+  },
+}
+
+export const pastDueExpiredSubscription: RecurlySubscription = {
   manager_ids: ['abc123'],
   member_ids: [],
   invited_emails: [],
@@ -90,7 +168,7 @@ export const pastDueExpiredSubscription: Subscription = {
   },
 }
 
-export const canceledSubscription: Subscription = {
+export const canceledSubscription: RecurlySubscription = {
   manager_ids: ['abc123'],
   member_ids: [],
   invited_emails: [],
@@ -129,7 +207,7 @@ export const canceledSubscription: Subscription = {
   },
 }
 
-export const pendingSubscriptionChange: Subscription = {
+export const pendingSubscriptionChange: RecurlySubscription = {
   manager_ids: ['abc123'],
   member_ids: [],
   invited_emails: [],
@@ -285,7 +363,7 @@ export const groupActiveSubscriptionWithPendingLicenseChange: GroupSubscription 
     },
   }
 
-export const trialSubscription: Subscription = {
+export const trialSubscription: RecurlySubscription = {
   manager_ids: ['abc123'],
   member_ids: [],
   invited_emails: [],
@@ -331,5 +409,113 @@ export const trialSubscription: Subscription = {
       },
     },
     displayPrice: '$14.00',
+  },
+}
+
+export const customSubscription: CustomSubscription = {
+  manager_ids: ['abc123'],
+  member_ids: [],
+  invited_emails: [],
+  groupPlan: false,
+  membersLimit: 0,
+  _id: 'def456',
+  admin_id: 'abc123',
+  teamInvites: [],
+  planCode: 'collaborator-annual',
+  recurlySubscription_id: 'ghi789',
+  plan: {
+    planCode: 'collaborator-annual',
+    name: 'Standard (Collaborator) Annual',
+    price_in_cents: 21900,
+    annual: true,
+    featureDescription: [],
+  },
+  customAccount: true,
+}
+
+export const trialCollaboratorSubscription: RecurlySubscription = {
+  manager_ids: ['abc123'],
+  member_ids: [],
+  invited_emails: [],
+  groupPlan: false,
+  membersLimit: 0,
+  _id: 'def456',
+  admin_id: 'abc123',
+  teamInvites: [],
+  planCode: 'collaborator_free_trial_7_days',
+  recurlySubscription_id: 'ghi789',
+  plan: {
+    planCode: 'collaborator_free_trial_7_days',
+    name: 'Standard (Collaborator)',
+    price_in_cents: 2300,
+    featureDescription: [],
+    hideFromUsers: true,
+  },
+  recurly: {
+    tax: 0,
+    taxRate: 0,
+    billingDetailsLink: '/user/subscription/recurly/billing-details',
+    accountManagementLink: '/user/subscription/recurly/account-management',
+    additionalLicenses: 0,
+    totalLicenses: 0,
+    nextPaymentDueAt: sevenDaysFromTodayFormatted,
+    currency: 'USD',
+    state: 'active',
+    trialEndsAtFormatted: sevenDaysFromTodayFormatted,
+    trial_ends_at: new Date(sevenDaysFromToday).toString(),
+    activeCoupons: [],
+    account: {
+      has_canceled_subscription: {
+        _: 'false',
+        $: {
+          type: 'boolean',
+        },
+      },
+      has_past_due_invoice: {
+        _: 'false',
+        $: {
+          type: 'boolean',
+        },
+      },
+    },
+    displayPrice: '$21.00',
+  },
+}
+
+export const monthlyActiveCollaborator: RecurlySubscription = {
+  manager_ids: ['abc123'],
+  member_ids: [],
+  invited_emails: [],
+  groupPlan: false,
+  membersLimit: 0,
+  _id: 'def456',
+  admin_id: 'abc123',
+  teamInvites: [],
+  planCode: 'collaborator',
+  recurlySubscription_id: 'ghi789',
+  plan: {
+    planCode: 'collaborator',
+    name: 'Standard (Collaborator)',
+    price_in_cents: 212300900,
+    featureDescription: [],
+  },
+  recurly: {
+    tax: 0,
+    taxRate: 0,
+    billingDetailsLink: '/user/subscription/recurly/billing-details',
+    accountManagementLink: '/user/subscription/recurly/account-management',
+    additionalLicenses: 0,
+    totalLicenses: 0,
+    nextPaymentDueAt,
+    currency: 'USD',
+    state: 'active',
+    trialEndsAtFormatted: null,
+    trial_ends_at: null,
+    activeCoupons: [],
+    account: {
+      has_canceled_subscription: { _: 'false', $: { type: 'boolean' } },
+      has_past_due_invoice: { _: 'false', $: { type: 'boolean' } },
+    },
+    displayPrice: '$21.00',
   },
 }

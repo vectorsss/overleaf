@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { Modal } from 'react-bootstrap'
 import { useTranslation, Trans } from 'react-i18next'
-import { postJSON } from '../../../../../../../infrastructure/fetch-json'
-import AccessibleModal from '../../../../../../../shared/components/accessible-modal'
-import { useSubscriptionDashboardContext } from '../../../../../context/subscription-dashboard-context'
-import { cancelPendingSubscriptionChangeUrl } from '../../../../../data/subscription-url'
+import { SubscriptionDashModalIds } from '../../../../../../../../../../types/subscription/dashboard/modal-ids'
+import { postJSON } from '../../../../../../../../infrastructure/fetch-json'
+import AccessibleModal from '../../../../../../../../shared/components/accessible-modal'
+import { useSubscriptionDashboardContext } from '../../../../../../context/subscription-dashboard-context'
+import { cancelPendingSubscriptionChangeUrl } from '../../../../../../data/subscription-url'
 
 export function KeepCurrentPlanModal() {
-  const modalId = 'keep-current-plan'
+  const modalId: SubscriptionDashModalIds = 'keep-current-plan'
   const [error, setError] = useState(false)
   const [inflight, setInflight] = useState(false)
   const { t } = useTranslation()
@@ -20,11 +21,11 @@ export function KeepCurrentPlanModal() {
 
     try {
       await postJSON(cancelPendingSubscriptionChangeUrl)
+      window.location.reload()
     } catch (e) {
       setError(true)
       setInflight(false)
     }
-    window.location.reload()
   }
 
   if (modalIdShown !== modalId || !personalSubscription) return null
@@ -43,7 +44,7 @@ export function KeepCurrentPlanModal() {
 
       <Modal.Body>
         {error && (
-          <div className="alert alert-warning">
+          <div className="alert alert-danger" aria-live="polite">
             {t('generic_something_went_wrong')}. {t('try_again')}.{' '}
             {t('generic_if_problem_continues_contact_us')}.
           </div>

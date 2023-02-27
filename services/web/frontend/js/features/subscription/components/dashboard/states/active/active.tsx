@@ -2,19 +2,20 @@ import { useTranslation, Trans } from 'react-i18next'
 import PremiumFeaturesLink from '../../premium-features-link'
 import { PriceExceptions } from '../../../shared/price-exceptions'
 import { useSubscriptionDashboardContext } from '../../../../context/subscription-dashboard-context'
-import { Subscription } from '../../../../../../../../types/subscription/dashboard/subscription'
+import { RecurlySubscription } from '../../../../../../../../types/subscription/dashboard/subscription'
 import { CancelSubscriptionButton } from './cancel-subscription-button'
-import { CancelSubscription } from './cancel-subscription'
+import { CancelSubscription } from './cancel-plan/cancel-subscription'
 import { PendingPlanChange } from './pending-plan-change'
 import { TrialEnding } from './trial-ending'
 import { ChangePlan } from './change-plan/change-plan'
 import { PendingAdditionalLicenses } from './pending-additional-licenses'
 import { ContactSupportToChangeGroupPlan } from './contact-support-to-change-group-plan'
+import isInFreeTrial from '../../../../util/is-in-free-trial'
 
 export function ActiveSubscription({
   subscription,
 }: {
-  subscription: Subscription
+  subscription: RecurlySubscription
 }) {
   const { t } = useTranslation()
   const { recurlyLoadError, setShowChangePersonalPlan, showCancellation } =
@@ -72,10 +73,9 @@ export function ActiveSubscription({
       {(!subscription.pendingPlan ||
         subscription.pendingPlan.name === subscription.plan.name) &&
         subscription.plan.groupPlan && <ContactSupportToChangeGroupPlan />}
-      {subscription.recurly.trial_ends_at &&
+      {isInFreeTrial(subscription.recurly.trial_ends_at) &&
         subscription.recurly.trialEndsAtFormatted && (
           <TrialEnding
-            trialEndsAt={subscription.recurly.trial_ends_at}
             trialEndsAtFormatted={subscription.recurly.trialEndsAtFormatted}
           />
         )}
@@ -96,7 +96,7 @@ export function ActiveSubscription({
         />
       </p>
       <PremiumFeaturesLink />
-      <PriceExceptions />
+      <PriceExceptions subscription={subscription} />
       <p>
         <a
           href={subscription.recurly.billingDetailsLink}

@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Modal } from 'react-bootstrap'
 import { useTranslation, Trans } from 'react-i18next'
-import { postJSON } from '../../../../../../../infrastructure/fetch-json'
-import AccessibleModal from '../../../../../../../shared/components/accessible-modal'
-import getMeta from '../../../../../../../utils/meta'
-import { useSubscriptionDashboardContext } from '../../../../../context/subscription-dashboard-context'
-import { subscriptionUrl } from '../../../../../data/subscription-url'
+import { SubscriptionDashModalIds } from '../../../../../../../../../../types/subscription/dashboard/modal-ids'
+import { postJSON } from '../../../../../../../../infrastructure/fetch-json'
+import AccessibleModal from '../../../../../../../../shared/components/accessible-modal'
+import getMeta from '../../../../../../../../utils/meta'
+import { useSubscriptionDashboardContext } from '../../../../../../context/subscription-dashboard-context'
+import { subscriptionUpdateUrl } from '../../../../../../data/subscription-url'
 
 export function ConfirmChangePlanModal() {
-  const modalId = 'change-to-plan'
+  const modalId: SubscriptionDashModalIds = 'change-to-plan'
   const [error, setError] = useState(false)
   const [inflight, setInflight] = useState(false)
   const { t } = useTranslation()
@@ -21,16 +22,16 @@ export function ConfirmChangePlanModal() {
     setInflight(true)
 
     try {
-      await postJSON(`${subscriptionUrl}?origin=confirmChangePlan`, {
+      await postJSON(`${subscriptionUpdateUrl}?origin=confirmChangePlan`, {
         body: {
           plan_code: planCodeToChangeTo,
         },
       })
+      window.location.reload()
     } catch (e) {
       setError(true)
       setInflight(false)
     }
-    window.location.reload()
   }
 
   if (modalIdShown !== modalId || !planCodeToChangeTo) return null
@@ -55,7 +56,7 @@ export function ConfirmChangePlanModal() {
 
       <Modal.Body>
         {error && (
-          <div className="alert alert-warning">
+          <div className="alert alert-danger" aria-live="polite">
             {t('generic_something_went_wrong')}. {t('try_again')}.{' '}
             {t('generic_if_problem_continues_contact_us')}.
           </div>
