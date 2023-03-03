@@ -124,7 +124,7 @@ services:
     env_file:
       - dev.env
     environment:
-      - APP_NAME=Overleaf Community Edition
+      - APP_NAME=USTC Latex (试运行)
       - ENABLED_LINKED_FILE_TYPES=project_file,project_output_file
       - EMAIL_CONFIRMATION_DISABLED=true
       - NODE_ENV=development

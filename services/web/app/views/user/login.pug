@@ -4,11 +4,11 @@ block content
 	main.content.content-alt#main-content
 		.container
 			.row
-				.col-md-6.col-md-offset-3.col-lg-4.col-lg-offset-4
+				.col-md-6.col-md-offset-3.col-lg-6.col-lg-offset-3
 					.card
 						.page-header
 							h1 #{translate("log_in")}
-						button.btn-primary.btn(onClick="location='/caslogin'" style="margin-bottom: 30px;") 中国科大统一身份认证
+						button.btn-primary.btn(onClick="location='/caslogin'" style="margin-bottom: 30px; width: 100%;") 中国科大统一身份认证
 						form(data-ol-async-form, name="loginForm", action='/login', method="POST")
 							input(name='_csrf', type='hidden', value=csrfToken)
 							+formMessages()
@@ -35,3 +35,12 @@ block content
 									span(data-ol-inflight="idle") #{translate("login")}
 									span(hidden data-ol-inflight="pending") #{translate("logging_in")}…
 								a.pull-right(href='/user/password/reset') #{translate("forgot_your_password")}?
+
+						h2 使用说明
+						ul
+							li 平台使用中国科大统一身份认证登录。
+							li 平台支持无限数量合作者、无编译时间限制、历史记录、审阅批注、中文支持、Git 同步等功能。
+							li 
+								span(style="color:red;") 平台正在试运行阶段，不提供服务质量保证。存在数据丢失风险，请注意备份重要资料。
+							li 如有使用问题，请联系：
+								a(href="mailto:latex@mail.ustc.edu.cn") latex AT mail.ustc.edu.cn
