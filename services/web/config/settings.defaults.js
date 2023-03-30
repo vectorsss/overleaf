@@ -309,7 +309,7 @@ module.exports = {
     github: true,
     gitBridge: true,
     versioning: true,
-    compileTimeout: 180,
+    compileTimeout: 300,
     compileGroup: 'standard',
     references: true,
     templates: true,
@@ -626,7 +626,21 @@ module.exports = {
 
     showSubscriptionLink: false,
 
-    header_extras: [],
+    header_extras: [
+      {
+        text: '帮助',
+        dropdown: [
+          {
+            url: '/guide.pdf',
+            text: '用户手册'
+          },
+          {
+            url: 'https://www.overleaf.com/learn',
+            text: '官方文档',
+          },
+        ],
+      },
+    ],
   },
   // Example:
   //   header_extras: [{text: "Some Page", url: "http://example.com/some/page", class: "subdued"}]

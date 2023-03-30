@@ -733,12 +733,28 @@ if (process.env.SHARELATEX_TEMPLATES_USER_ID) {
 //     ].concat(settings.nav.header_extras || [])
 //   }
 // }
-settings.nav.header_extras = [
-  {
-    url: 'https://www.overleaf.com/learn',
-    text: '文档',
-  },
-].concat(settings.nav.header_extras || [])
+// settings.nav.header_extras = [
+//   {
+//     url: 'https://www.overleaf.com/learn',
+//     text: '文档',
+//   },
+// ].concat(settings.nav.header_extras || [])
+
+// settings.nav.header_extras = [
+//   {
+//     text: '帮助',
+//     dropdown: [
+//       {
+//         url: '//guide.pdf',
+//         text: '用户手册'
+//       },
+//       {
+//         url: 'https://www.overleaf.com/learn',
+//         text: '官方文档',
+//       },
+//     ],
+//   },
+// ].concat(settings.nav.header_extras || [])
 
 // /References
 // -----------

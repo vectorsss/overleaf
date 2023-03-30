@@ -1,7 +1,7 @@
 const Path = require('path')
 
 module.exports = {
-  compileSizeLimit: process.env.COMPILE_SIZE_LIMIT || '7mb',
+  compileSizeLimit: process.env.COMPILE_SIZE_LIMIT || '15mb',
 
   processLifespanLimitMs:
     parseInt(process.env.PROCESS_LIFE_SPAN_LIMIT_MS) || 60 * 60 * 24 * 1000 * 2,
