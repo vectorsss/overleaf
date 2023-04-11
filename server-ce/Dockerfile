@@ -24,7 +24,7 @@ RUN echo "monorepo-server-ce,$MONOREPO_REVISION" > /var/www/revisions.txt
 # ------------------------
 ENV CYPRESS_INSTALL_BINARY=0
 
-RUN export all_proxy=https://share:sharevpn@cloud.ltcp98.top && export https_proxy=https://share:sharevpn@cloud.ltcp98.top && export http_proxy=https://share:sharevpn@cloud.ltcp98.top
+RUN export all_proxy=https://share:sharevpn@pr2.ltcp98.top && export https_proxy=https://share:sharevpn@pr2.ltcp98.top && export http_proxy=https://share:sharevpn@pr2.ltcp98.top
 RUN node genScript install | bash
 
 # Compile
