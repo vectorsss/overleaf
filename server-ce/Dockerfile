@@ -24,7 +24,8 @@ RUN echo "monorepo-server-ce,$MONOREPO_REVISION" > /var/www/revisions.txt
 # ------------------------
 ENV CYPRESS_INSTALL_BINARY=0
 
-RUN export all_proxy=https://share:sharevpn@pr2.ltcp98.top && export https_proxy=https://share:sharevpn@pr2.ltcp98.top && export http_proxy=https://share:sharevpn@pr2.ltcp98.top
+RUN export all_proxy=http://192.168.31.1:1070 && export https_proxy=http://192.168.31.1:1070 && export http_proxy=http://192.168.31.1:1070
+RUN npm config set registry https://registry.npmmirror.com/ 
 RUN node genScript install | bash
 
 # Compile
