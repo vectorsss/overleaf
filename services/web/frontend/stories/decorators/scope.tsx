@@ -21,7 +21,7 @@ const initialize = () => {
   }
 
   const project: Project = {
-    _id: 'a-project',
+    _id: '63e21c07946dd8c76505f85a',
     name: 'A Project',
     features: { mendeley: true, zotero: true },
     tokens: {},
@@ -36,8 +36,11 @@ const initialize = () => {
       {
         _id: 'root-folder-id',
         name: 'rootFolder',
-        docs: [],
-        fileRefs: [],
+        docs: [
+          { _id: 'test-file-id', name: 'testfile.tex' },
+          { _id: 'test-bib-file-id', name: 'testsources.bib' },
+        ],
+        fileRefs: [{ _id: 'test-image-id', name: 'frog.jpg' }],
         folders: [],
       },
     ],
@@ -63,7 +66,7 @@ const initialize = () => {
     $broadcast: () => {},
     $root: {
       _references: {
-        keys: [],
+        keys: ['bibkeyExample'],
       },
     },
     ui: {
@@ -115,7 +118,9 @@ const initialize = () => {
     metadataManager: {
       metadata: {
         state: {
-          documents: {},
+          documents: {
+            'test-file-id': { labels: ['sec:section-label'], packages: [] },
+          },
         },
       },
     },
@@ -124,6 +129,7 @@ const initialize = () => {
   window.user = user
 
   window.ExposedSettings = {
+    adminEmail: 'placeholder@example.com',
     appName: 'Overleaf',
     cookieDomain: '.overleaf.stories',
     dropboxAppName: 'Overleaf-Stories',

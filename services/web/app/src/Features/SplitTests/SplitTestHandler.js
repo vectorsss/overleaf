@@ -11,6 +11,7 @@ const UserAnalyticsIdCache = require('../Analytics/UserAnalyticsIdCache')
 const { getAnalyticsIdFromMongoUser } = require('../Analytics/AnalyticsHelper')
 const Features = require('../../infrastructure/Features')
 const SplitTestUtils = require('./SplitTestUtils')
+const Settings = require('@overleaf/settings')
 
 const DEFAULT_VARIANT = 'default'
 const ALPHA_PHASE = 'alpha'
@@ -48,37 +49,37 @@ const DEFAULT_ASSIGNMENT = {
  * @returns {Promise<{variant: string, analytics: {segmentation: {splitTest: string, variant: string, phase: string, versionNumber: number}|{}}}>}
  */
 async function getAssignment(req, res, splitTestName, { sync = false } = {}) {
-  if (!Features.hasFeature('saas')) {
-    return DEFAULT_ASSIGNMENT
-  }
-
   const query = req.query || {}
   let assignment
 
-  // Check the query string for an override, ignoring an invalid value
-  const queryVariant = query[splitTestName]
-  if (queryVariant) {
-    const variants = await _getVariantNames(splitTestName)
-    if (variants.includes(queryVariant)) {
-      assignment = {
-        variant: queryVariant,
-        analytics: {
-          segmentation: {},
-        },
+  if (!Features.hasFeature('saas')) {
+    assignment = _getNonSaasAssignment(splitTestName)
+  } else {
+    // Check the query string for an override, ignoring an invalid value
+    const queryVariant = query[splitTestName]
+    if (queryVariant) {
+      const variants = await _getVariantNames(splitTestName)
+      if (variants.includes(queryVariant)) {
+        assignment = {
+          variant: queryVariant,
+          analytics: {
+            segmentation: {},
+          },
+        }
       }
     }
-  }
 
-  if (!assignment) {
-    const { userId, analyticsId } = AnalyticsManager.getIdsFromSession(
-      req.session
-    )
-    assignment = await _getAssignment(splitTestName, {
-      analyticsId,
-      userId,
-      session: req.session,
-      sync,
-    })
+    if (!assignment) {
+      const { userId, analyticsId } = AnalyticsManager.getIdsFromSession(
+        req.session
+      )
+      assignment = await _getAssignment(splitTestName, {
+        analyticsId,
+        userId,
+        session: req.session,
+        sync,
+      })
+    }
   }
 
   LocalsHelper.setSplitTestVariant(
@@ -107,7 +108,7 @@ async function getAssignmentForUser(
   { sync = false } = {}
 ) {
   if (!Features.hasFeature('saas')) {
-    return DEFAULT_ASSIGNMENT
+    return _getNonSaasAssignment(splitTestName)
   }
 
   const analyticsId = await UserAnalyticsIdCache.get(userId)
@@ -131,7 +132,7 @@ async function getAssignmentForMongoUser(
   { sync = false } = {}
 ) {
   if (!Features.hasFeature('saas')) {
-    return DEFAULT_ASSIGNMENT
+    return _getNonSaasAssignment(splitTestName)
   }
 
   return _getAssignment(splitTestName, {
@@ -401,6 +402,18 @@ async function _loadSplitTestInfoInLocals(locals, splitTestName) {
       badgeInfo: splitTest.badgeInfo?.[phase],
     })
   }
+}
+
+function _getNonSaasAssignment(splitTestName) {
+  if (Settings.splitTestOverrides?.[splitTestName]) {
+    return {
+      variant: Settings.splitTestOverrides?.[splitTestName],
+      analytics: {
+        segmentation: {},
+      },
+    }
+  }
+  return DEFAULT_ASSIGNMENT
 }
 
 module.exports = {

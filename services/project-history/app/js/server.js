@@ -16,6 +16,8 @@ if (Settings.sentry.dsn) {
 Metrics.initialize('project-history')
 Metrics.event_loop.monitor(logger)
 Metrics.memory.monitor(logger)
+Metrics.leaked_sockets.monitor(logger)
+Metrics.open_sockets.monitor()
 
 // log updates as truncated strings
 function truncateFn(updates) {

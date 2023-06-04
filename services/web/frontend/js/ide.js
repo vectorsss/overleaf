@@ -59,6 +59,7 @@ import './main/event'
 import './main/account-upgrade-angular'
 import './main/system-messages'
 import '../../modules/modules-ide.js'
+import './features/source-editor/ide'
 import './shared/context/controllers/root-context-controller'
 import './features/editor-navigation-toolbar/controllers/editor-navigation-toolbar-controller'
 import './features/pdf-preview/controllers/pdf-preview-controller'
@@ -66,7 +67,11 @@ import './features/share-project-modal/controllers/react-share-project-modal-con
 import './features/source-editor/controllers/editor-switch-controller'
 import './features/source-editor/controllers/cm6-switch-away-survey-controller'
 import './features/source-editor/controllers/grammarly-warning-controller'
+import './features/source-editor/controllers/legacy-editor-warning-controller'
 import './features/outline/controllers/documentation-button-controller'
+import './features/onboarding/controllers/onboarding-video-tour-modal-controller'
+import './features/history/controllers/history-controller'
+import './features/history/controllers/history-file-tree-controller'
 import { cleanupServiceWorker } from './utils/service-worker-cleanup'
 import { reportCM6Perf } from './infrastructure/cm6-performance'
 import { reportAcePerf } from './ide/editor/ace-performance'
@@ -469,6 +474,13 @@ If the project has been renamed please look in your project list for a new proje
     // Listen for editor:lint event from CM6 linter
     window.addEventListener('editor:lint', event => {
       $scope.hasLintingError = event.detail.hasLintingError
+    })
+
+    ide.socket.on('project:access:revoked', () => {
+      ide.showGenericMessageModal(
+        'Removed From Project',
+        'You have been removed from this project, and will no longer have access to it. You will be redirected to your project dashboard momentarily.'
+      )
     })
 
     return ide.socket.on('project:publicAccessLevel:changed', data => {

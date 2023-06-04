@@ -24,6 +24,10 @@ export const USER_EMAIL = 'testuser@example.com'
 export function EditorProviders({
   user = { id: USER_ID, email: USER_EMAIL },
   projectId = PROJECT_ID,
+  projectOwner = {
+    _id: '124abd',
+    email: 'owner@example.com',
+  },
   rootDocId = '_root_doc_id',
   socket = {
     on: sinon.stub(),
@@ -68,7 +72,7 @@ export function EditorProviders({
   },
 }) {
   window.user = user || window.user
-  window.gitBridgePublicBaseUrl = 'git.overleaf.test'
+  window.gitBridgePublicBaseUrl = 'https://git.overleaf.test'
   window.project_id = projectId != null ? projectId : window.project_id
   window.isRestrictedTokenMember = isRestrictedTokenMember
 
@@ -77,10 +81,7 @@ export function EditorProviders({
     project: {
       _id: window.project_id,
       name: PROJECT_NAME,
-      owner: {
-        _id: '124abd',
-        email: 'owner@example.com',
-      },
+      owner: projectOwner,
       features,
       rootDoc_id: rootDocId,
       rootFolder,

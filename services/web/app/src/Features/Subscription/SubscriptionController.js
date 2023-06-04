@@ -9,7 +9,10 @@ const logger = require('@overleaf/logger')
 const GeoIpLookup = require('../../infrastructure/GeoIpLookup')
 const FeaturesUpdater = require('./FeaturesUpdater')
 const planFeatures = require('./planFeatures')
-const plansV2Config = require('./plansV2Config')
+const noPersonalPlansConfig = require('./st-personal-off-variant/plansConfig')
+const hasPersonalPlansConfig = require('./st-personal-off-default/plansConfig')
+const noPersonalInterstitialPaymentConfig = require('./st-personal-off-variant/interstitialPaymentConfig')
+const hasPersonalInterstitialPaymentConfig = require('./st-personal-off-default/interstitialPaymentConfig')
 const GroupPlansData = require('./GroupPlansData')
 const V1SubscriptionManager = require('./V1SubscriptionManager')
 const Errors = require('../Errors/Errors')
@@ -21,7 +24,6 @@ const { expressify } = require('../../util/promises')
 const OError = require('@overleaf/o-error')
 const SplitTestHandler = require('../SplitTests/SplitTestHandler')
 const SubscriptionHelper = require('./SubscriptionHelper')
-const interstitialPaymentConfig = require('./interstitialPaymentConfig')
 
 const groupPlanModalOptions = Settings.groupPlanModalOptions
 const validGroupPlanModalOptions = {
@@ -31,21 +33,34 @@ const validGroupPlanModalOptions = {
   usage: groupPlanModalOptions.usages.map(item => item.code),
 }
 
+function getPlansSplitOptions(assignment) {
+  if (assignment?.variant === 'personal-off') {
+    return {
+      directory: 'st-personal-off-variant',
+      plansConfig: noPersonalPlansConfig,
+      interstitialPaymentConfig: noPersonalInterstitialPaymentConfig,
+    }
+  }
+
+  return {
+    directory: 'st-personal-off-default',
+    plansConfig: hasPersonalPlansConfig,
+    interstitialPaymentConfig: hasPersonalInterstitialPaymentConfig,
+  }
+}
+
 async function plansPage(req, res) {
   const plans = SubscriptionViewModelBuilder.buildPlansList()
 
-  let recommendedCurrency
-  if (req.query.currency) {
-    const queryCurrency = req.query.currency.toUpperCase()
-    if (GeoIpLookup.isValidCurrencyParam(queryCurrency)) {
-      recommendedCurrency = queryCurrency
-    }
+  let currency = null
+  const queryCurrency = req.query.currency?.toUpperCase()
+  if (GeoIpLookup.isValidCurrencyParam(queryCurrency)) {
+    currency = queryCurrency
   }
-  if (!recommendedCurrency) {
-    const currencyLookup = await GeoIpLookup.promises.getCurrencyCode(
-      (req.query ? req.query.ip : undefined) || req.ip
-    )
-    recommendedCurrency = currencyLookup.currencyCode
+  const { recommendedCurrency, countryCode, geoPricingTestVariant } =
+    await _getRecommendedCurrency(req, res)
+  if (recommendedCurrency && currency == null) {
+    currency = recommendedCurrency
   }
 
   function getDefault(param, category, defaultValue) {
@@ -56,60 +71,61 @@ async function plansPage(req, res) {
     return defaultValue
   }
 
-  let plansPageLayoutV3Assignment = { variant: 'default' }
-
-  try {
-    plansPageLayoutV3Assignment = await SplitTestHandler.promises.getAssignment(
-      req,
-      res,
-      'plans-page-layout-v3'
-    )
-  } catch (error) {
-    logger.error(
-      { err: error },
-      'failed to get "plans-page-layout-v3" split test assignment'
-    )
-  }
-
-  const showNewPlansPage =
-    plansPageLayoutV3Assignment.variant === 'new-plans-page'
+  const currentView = 'annual'
 
   let defaultGroupPlanModalCurrency = 'USD'
-  if (validGroupPlanModalOptions.currency.includes(recommendedCurrency)) {
-    defaultGroupPlanModalCurrency = recommendedCurrency
+  if (validGroupPlanModalOptions.currency.includes(currency)) {
+    defaultGroupPlanModalCurrency = currency
   }
   const groupPlanModalDefaults = {
     plan_code: getDefault('plan', 'plan_code', 'collaborator'),
-    size: getDefault('number', 'size', showNewPlansPage ? '2' : '10'),
+    size: getDefault('number', 'size', '2'),
     currency: getDefault('currency', 'currency', defaultGroupPlanModalCurrency),
     usage: getDefault('usage', 'usage', 'enterprise'),
   }
 
+  let removePersonalPlanAssingment = { variant: 'default' }
+  try {
+    removePersonalPlanAssingment =
+      await SplitTestHandler.promises.getAssignment(
+        req,
+        res,
+        'remove-personal-plan'
+      )
+  } catch (error) {
+    logger.error(
+      { err: error },
+      'Failed to get assignment for remove-personal-plan test'
+    )
+  }
+
+  const { plansConfig, directory } = getPlansSplitOptions(
+    removePersonalPlanAssingment
+  )
+
   AnalyticsManager.recordEventForSession(req.session, 'plans-page-view', {
-    'plans-page-layout-v3': plansPageLayoutV3Assignment.variant,
+    currency: recommendedCurrency,
+    'remove-personal-plan-page': removePersonalPlanAssingment?.variant,
+    countryCode,
+    'geo-pricing-inr-group': geoPricingTestVariant,
+    'geo-pricing-inr-page': currency === 'INR' ? 'inr' : 'default',
   })
 
-  const template = showNewPlansPage
-    ? 'subscriptions/plans-marketing-v2'
-    : 'subscriptions/plans-marketing'
-
-  res.render(template, {
+  res.render(`subscriptions/plans-marketing/${directory}/plans-marketing-v2`, {
     title: 'plans_and_pricing',
+    currentView,
     plans,
     itm_content: req.query?.itm_content,
     itm_referrer: req.query?.itm_referrer,
     itm_campaign: 'plans',
-    recommendedCurrency,
+    recommendedCurrency: currency,
     planFeatures,
-    plansV2Config,
+    plansConfig,
     groupPlans: GroupPlansData,
     groupPlanModalOptions,
     groupPlanModalDefaults,
-    plansPageLayoutV3Variant: plansPageLayoutV3Assignment.variant,
     initialLocalizedGroupPrice:
-      SubscriptionHelper.generateInitialLocalizedGroupPrice(
-        recommendedCurrency
-      ),
+      SubscriptionHelper.generateInitialLocalizedGroupPrice(currency),
   })
 }
 
@@ -167,10 +183,8 @@ async function _paymentReactPage(req, res) {
           currency = queryCurrency
         }
       }
-      const { currencyCode: recommendedCurrency, countryCode } =
-        await GeoIpLookup.promises.getCurrencyCode(
-          (req.query ? req.query.ip : undefined) || req.ip
-        )
+      const { recommendedCurrency, countryCode } =
+        await _getRecommendedCurrency(req, res)
       if (recommendedCurrency && currency == null) {
         currency = recommendedCurrency
       }
@@ -225,22 +239,10 @@ async function _paymentAngularPage(req, res) {
         }
       }
       const { currencyCode: recommendedCurrency, countryCode } =
-        await GeoIpLookup.promises.getCurrencyCode(
-          (req.query ? req.query.ip : undefined) || req.ip
-        )
+        await GeoIpLookup.promises.getCurrencyCode(req.query?.ip || req.ip)
       if (recommendedCurrency && currency == null) {
         currency = recommendedCurrency
       }
-
-      const refreshedPaymentPageAssignment =
-        await SplitTestHandler.promises.getAssignment(
-          req,
-          res,
-          'payment-page-refresh'
-        )
-      const useRefreshedPaymentPage =
-        refreshedPaymentPageAssignment &&
-        refreshedPaymentPageAssignment.variant === 'refreshed-payment-page'
 
       await SplitTestHandler.promises.getAssignment(
         req,
@@ -248,11 +250,7 @@ async function _paymentAngularPage(req, res) {
         'student-check-modal'
       )
 
-      const template = useRefreshedPaymentPage
-        ? 'subscriptions/new-refreshed'
-        : 'subscriptions/new-updated'
-
-      res.render(template, {
+      res.render('subscriptions/new-refreshed', {
         title: 'subscribe',
         currency,
         countryCode,
@@ -412,28 +410,61 @@ async function _userSubscriptionAngularPage(req, res) {
 
 async function interstitialPaymentPage(req, res) {
   const user = SessionManager.getSessionUser(req.session)
-  const { currencyCode: recommendedCurrency } =
-    await GeoIpLookup.promises.getCurrencyCode(
-      (req.query ? req.query.ip : undefined) || req.ip
-    )
+  const { recommendedCurrency, countryCode, geoPricingTestVariant } =
+    await _getRecommendedCurrency(req, res)
 
   const hasSubscription =
     await LimitationsManager.promises.userHasV1OrV2Subscription(user)
 
   const showSkipLink = req.query?.skipLink === 'true'
 
+  let removePersonalPlanAssingment = { variant: 'default' }
+  try {
+    removePersonalPlanAssingment =
+      await SplitTestHandler.promises.getAssignment(
+        req,
+        res,
+        'remove-personal-plan'
+      )
+  } catch (error) {
+    logger.error(
+      { err: error },
+      'Failed to get assignment for remove-personal-plan test'
+    )
+  }
+
+  const { interstitialPaymentConfig, directory } = getPlansSplitOptions(
+    removePersonalPlanAssingment
+  )
+
   if (hasSubscription) {
     res.redirect('/user/subscription?hasSubscription=true')
   } else {
-    res.render('subscriptions/interstitial-payment', {
-      title: 'subscribe',
-      itm_content: req.query && req.query.itm_content,
-      itm_campaign: req.query?.itm_campaign,
-      itm_referrer: req.query?.itm_referrer,
-      recommendedCurrency,
-      interstitialPaymentConfig,
-      showSkipLink,
-    })
+    AnalyticsManager.recordEventForSession(
+      req.session,
+      'paywall-plans-page-view',
+      {
+        currency: recommendedCurrency,
+        countryCode,
+        'geo-pricing-inr-group': geoPricingTestVariant,
+        'geo-pricing-inr-page':
+          recommendedCurrency === 'INR' ? 'inr' : 'default',
+        'remove-personal-plan-page': removePersonalPlanAssingment?.variant,
+      }
+    )
+
+    res.render(
+      `subscriptions/plans-marketing/${directory}/interstitial-payment`,
+      {
+        title: 'subscribe',
+        itm_content: req.query?.itm_content,
+        itm_campaign: req.query?.itm_campaign,
+        itm_referrer: req.query?.itm_referrer,
+        recommendedCurrency,
+        interstitialPaymentConfig,
+        showSkipLink,
+      }
+    )
   }
 }
 
@@ -450,7 +481,7 @@ async function createSubscription(req, res) {
     await LimitationsManager.promises.userHasV1OrV2Subscription(user)
 
   if (hasSubscription) {
-    logger.warn({ user_id: user._id }, 'user already has subscription')
+    logger.warn({ userId: user._id }, 'user already has subscription')
     return res.sendStatus(409) // conflict
   }
 
@@ -476,7 +507,7 @@ async function createSubscription(req, res) {
       )
     } else {
       logger.warn(
-        { err, user_id: user._id },
+        { err, userId: user._id },
         'something went wrong creating subscription'
       )
       throw err
@@ -552,7 +583,7 @@ async function _successfulSubscriptionAngular(req, res) {
 
 function cancelSubscription(req, res, next) {
   const user = SessionManager.getSessionUser(req.session)
-  logger.debug({ user_id: user._id }, 'canceling subscription')
+  logger.debug({ userId: user._id }, 'canceling subscription')
   SubscriptionHandler.cancelSubscription(user, function (err) {
     if (err) {
       OError.tag(err, 'something went wrong canceling subscription', {
@@ -626,12 +657,12 @@ function updateSubscription(req, res, next) {
   if (planCode == null) {
     const err = new Error('plan_code is not defined')
     logger.warn(
-      { user_id: user._id, err, planCode, origin, body: req.body },
+      { userId: user._id, err, planCode, origin, body: req.body },
       '[Subscription] error in updateSubscription form'
     )
     return next(err)
   }
-  logger.debug({ planCode, user_id: user._id }, 'updating subscription')
+  logger.debug({ planCode, userId: user._id }, 'updating subscription')
   SubscriptionHandler.updateSubscription(user, planCode, null, function (err) {
     if (err) {
       OError.tag(err, 'something went wrong updating subscription', {
@@ -645,7 +676,7 @@ function updateSubscription(req, res, next) {
 
 function cancelPendingSubscriptionChange(req, res, next) {
   const user = SessionManager.getSessionUser(req.session)
-  logger.debug({ user_id: user._id }, 'canceling pending subscription change')
+  logger.debug({ userId: user._id }, 'canceling pending subscription change')
   SubscriptionHandler.cancelPendingSubscriptionChange(user, function (err) {
     if (err) {
       OError.tag(
@@ -677,7 +708,7 @@ function updateAccountEmailAddress(req, res, next) {
 
 function reactivateSubscription(req, res, next) {
   const user = SessionManager.getSessionUser(req.session)
-  logger.debug({ user_id: user._id }, 'reactivating subscription')
+  logger.debug({ userId: user._id }, 'reactivating subscription')
   SubscriptionHandler.reactivateSubscription(user, function (err) {
     if (err) {
       OError.tag(err, 'something went wrong reactivating subscription', {
@@ -774,7 +805,7 @@ function processUpgradeToAnnualPlan(req, res, next) {
   const couponCode = Settings.coupon_codes.upgradeToAnnualPromo[planName]
   const annualPlanName = `${planName}-annual`
   logger.debug(
-    { user_id: user._id, planName: annualPlanName },
+    { userId: user._id, planName: annualPlanName },
     'user is upgrading to annual billing with discount'
   )
   return SubscriptionHandler.updateSubscription(
@@ -840,6 +871,38 @@ async function redirectToHostedPage(req, res) {
     )
   logger.warn({ userId, pageType }, 'redirecting to recurly hosted page')
   res.redirect(url)
+}
+
+async function _getRecommendedCurrency(req, res) {
+  const currencyLookup = await GeoIpLookup.promises.getCurrencyCode(
+    req.query?.ip || req.ip
+  )
+  const countryCode = currencyLookup.countryCode
+  let recommendedCurrency = currencyLookup.currencyCode
+  let assignment
+  // for #12703
+  try {
+    assignment = await SplitTestHandler.promises.getAssignment(
+      req,
+      res,
+      'geo-pricing-inr'
+    )
+  } catch (error) {
+    logger.error(
+      { err: error },
+      'Failed to get assignment for geo-pricing-inr test'
+    )
+  }
+  // if the user has been detected as located in India (thus recommended INR as currency)
+  // but is not part of the geo pricing test, we fall back to the default currency instead
+  if (recommendedCurrency === 'INR' && assignment?.variant !== 'inr') {
+    recommendedCurrency = GeoIpLookup.DEFAULT_CURRENCY_CODE
+  }
+  return {
+    recommendedCurrency,
+    countryCode,
+    geoPricingTestVariant: assignment?.variant,
+  }
 }
 
 module.exports = {

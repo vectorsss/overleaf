@@ -1913,6 +1913,43 @@ describe('ProjectEntityUpdateHandler', function () {
         this.callback.calledWithMatch(errorMatcher).should.equal(true)
       })
     })
+
+    describe('renaming an entity with a non-string value', function () {
+      beforeEach(function () {
+        this.project_name = 'project name'
+        this.startPath = '/folder/a.tex'
+        this.endPath = '/folder/b.tex'
+        this.rev = 2
+        this.changes = { newDocs: ['old-doc'], newFiles: ['old-file'] }
+        this.newDocName = ['hello']
+        this.ProjectEntityMongoUpdateHandler.renameEntity.yields(
+          null,
+          this.project,
+          this.startPath,
+          this.endPath,
+          this.rev,
+          this.changes
+        )
+
+        this.ProjectEntityUpdateHandler.renameEntity(
+          projectId,
+          docId,
+          'doc',
+          this.newDocName,
+          userId,
+          this.source,
+          this.callback
+        )
+      })
+
+      it('returns an error', function () {
+        const errorMatcher = sinon.match.instanceOf(Error)
+        this.callback.calledWithMatch(errorMatcher).should.equal(true)
+        expect(
+          this.ProjectEntityMongoUpdateHandler.renameEntity.called
+        ).to.equal(false)
+      })
+    })
   })
 
   describe('resyncProjectHistory', function () {
@@ -2335,6 +2372,24 @@ describe('ProjectEntityUpdateHandler', function () {
         expect(
           this.DocumentUpdaterHandler.resyncProjectHistory
         ).to.have.been.calledWith(projectId, projectHistoryId, docs, files)
+      })
+    })
+
+    describe('a project with an invalid file tree', function () {
+      beforeEach(function () {
+        this.callback = sinon.stub()
+        this.ProjectGetter.getProject.yields(null, this.project)
+        this.ProjectEntityHandler.getAllEntitiesFromProject.throws()
+        this.ProjectEntityUpdateHandler.resyncProjectHistory(
+          projectId,
+          this.callback
+        )
+      })
+
+      it('calls the callback with an error', function () {
+        expect(this.callback).to.have.been.calledWith(
+          sinon.match.instanceOf(Error)
+        )
       })
     })
   })

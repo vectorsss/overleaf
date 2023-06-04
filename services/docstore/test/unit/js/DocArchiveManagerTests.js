@@ -12,7 +12,7 @@ describe('DocArchiveManager', function () {
     RangeManager,
     Settings,
     Crypto,
-    Streamifier,
+    StreamUtils,
     HashDigest,
     HashUpdate,
     archivedDocs,
@@ -42,8 +42,8 @@ describe('DocArchiveManager', function () {
     Crypto = {
       createHash: sinon.stub().returns({ update: HashUpdate }),
     }
-    Streamifier = {
-      createReadStream: sinon.stub().returns({ stream: 'readStream' }),
+    StreamUtils = {
+      ReadableString: sinon.stub().returns({ stream: 'readStream' }),
     }
 
     projectId = ObjectId()
@@ -158,7 +158,7 @@ describe('DocArchiveManager', function () {
       requires: {
         '@overleaf/settings': Settings,
         crypto: Crypto,
-        streamifier: Streamifier,
+        '@overleaf/stream-utils': StreamUtils,
         './MongoManager': MongoManager,
         './RangeManager': RangeManager,
         './PersistorManager': PersistorManager,
@@ -185,7 +185,7 @@ describe('DocArchiveManager', function () {
 
     it('should add the schema version', async function () {
       await DocArchiveManager.promises.archiveDoc(projectId, mongoDocs[1]._id)
-      expect(Streamifier.createReadStream).to.have.been.calledWith(
+      expect(StreamUtils.ReadableString).to.have.been.calledWith(
         sinon.match(/"schema_v":1/)
       )
     })
@@ -219,7 +219,7 @@ describe('DocArchiveManager', function () {
 
     it('should create a stream from the encoded json and send it', async function () {
       await DocArchiveManager.promises.archiveDoc(projectId, mongoDocs[0]._id)
-      expect(Streamifier.createReadStream).to.have.been.calledWith(
+      expect(StreamUtils.ReadableString).to.have.been.calledWith(
         archivedDocJson
       )
       expect(PersistorManager.sendStream).to.have.been.calledWith(
@@ -236,6 +236,17 @@ describe('DocArchiveManager', function () {
         mongoDocs[0]._id,
         mongoDocs[0].rev
       )
+    })
+
+    describe('when archiving is not configured', function () {
+      beforeEach(function () {
+        Settings.docstore.backend = undefined
+      })
+
+      it('should bail out early', async function () {
+        await DocArchiveManager.promises.archiveDoc(projectId, mongoDocs[0]._id)
+        expect(MongoManager.promises.getDocForArchiving).to.not.have.been.called
+      })
     })
 
     describe('with null bytes in the result', function () {
@@ -294,6 +305,26 @@ describe('DocArchiveManager', function () {
         expect(
           MongoManager.promises.restoreArchivedDoc
         ).to.have.been.calledWith(projectId, docId, archivedDoc)
+      })
+
+      describe('when archiving is not configured', function () {
+        beforeEach(function () {
+          Settings.docstore.backend = undefined
+        })
+
+        it('should error out on archived doc', async function () {
+          await expect(
+            DocArchiveManager.promises.unarchiveDoc(projectId, docId)
+          ).to.eventually.be.rejected.and.match(
+            /found archived doc, but archiving backend is not configured/
+          )
+        })
+
+        it('should return early on non-archived doc', async function () {
+          MongoManager.promises.findDoc = sinon.stub().resolves({ rev })
+          await DocArchiveManager.promises.unarchiveDoc(projectId, docId)
+          expect(PersistorManager.getObjectMd5Hash).to.not.have.been.called
+        })
       })
 
       describe('doc contents', function () {
@@ -480,6 +511,18 @@ describe('DocArchiveManager', function () {
         MongoManager.promises.markDocAsArchived
       ).not.to.have.been.calledWith(projectId, mongoDocs[3]._id)
     })
+
+    describe('when archiving is not configured', function () {
+      beforeEach(function () {
+        Settings.docstore.backend = undefined
+      })
+
+      it('should bail out early', async function () {
+        await DocArchiveManager.promises.archiveDoc(projectId, mongoDocs[0]._id)
+        expect(MongoManager.promises.getNonArchivedProjectDocIds).to.not.have
+          .been.called
+      })
+    })
   })
 
   describe('unArchiveAllDocs', function () {
@@ -497,6 +540,18 @@ describe('DocArchiveManager', function () {
           `${projectId}/${doc._id}`
         )
       }
+    })
+
+    describe('when archiving is not configured', function () {
+      beforeEach(function () {
+        Settings.docstore.backend = undefined
+      })
+
+      it('should bail out early', async function () {
+        await DocArchiveManager.promises.archiveDoc(projectId, mongoDocs[0]._id)
+        expect(MongoManager.promises.getNonDeletedArchivedProjectDocs).to.not
+          .have.been.called
+      })
     })
   })
 })

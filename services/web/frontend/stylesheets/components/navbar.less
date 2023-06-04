@@ -45,12 +45,12 @@
 // content for the user's viewport.
 
 .navbar-collapse {
-  max-height: @navbar-collapse-max-height;
   overflow-x: visible;
   padding-right: @navbar-padding-horizontal;
   padding-left: @navbar-padding-horizontal;
   &:extend(.clearfix all);
   -webkit-overflow-scrolling: touch;
+  height: 100vh;
 
   &.in {
     overflow-y: auto;
@@ -84,7 +84,7 @@
 }
 
 .navbar-main {
-  z-index: 1;
+  z-index: @z-index-navbar;
   .container-fluid > .navbar-collapse {
     // High specificity needed to override Bootstrap's default.
     margin: 10px 0 0;

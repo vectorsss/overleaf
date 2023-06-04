@@ -1,5 +1,6 @@
 const _ = require('lodash')
 const { db, ObjectId } = require('../../infrastructure/mongodb')
+const Modules = require('../../infrastructure/Modules')
 const { callbackify } = require('util')
 const { Project } = require('../../models/Project')
 const { DeletedProject } = require('../../models/DeletedProject')
@@ -20,6 +21,7 @@ const TpdsUpdateSender = require('../ThirdPartyDataStore/TpdsUpdateSender')
 const ChatApiHandler = require('../Chat/ChatApiHandler')
 const moment = require('moment')
 const { promiseMapWithLimit } = require('../../util/promises')
+const { READ_PREFERENCE_SECONDARY } = require('../../infrastructure/mongodb')
 
 const EXPIRE_PROJECTS_AFTER_DAYS = 90
 const PROJECT_EXPIRATION_BATCH_SIZE = 10000
@@ -57,7 +59,7 @@ module.exports = {
 
 async function markAsDeletedByExternalSource(projectId) {
   logger.debug(
-    { project_id: projectId },
+    { projectId },
     'marking project as deleted by external data source'
   )
   await Project.updateOne(
@@ -94,7 +96,7 @@ async function expireDeletedProjectsAfterDuration() {
     { 'deleterData.deletedProjectId': 1 }
   )
     .limit(PROJECT_EXPIRATION_BATCH_SIZE)
-    .read('secondary')
+    .read(READ_PREFERENCE_SECONDARY)
   const projectIds = _.shuffle(
     deletedProjects.map(
       deletedProject => deletedProject.deleterData.deletedProjectId
@@ -274,7 +276,7 @@ async function deleteProject(projectId, options = {}) {
     throw err
   }
 
-  logger.debug({ project_id: projectId }, 'successfully deleted project')
+  logger.debug({ projectId }, 'successfully deleted project')
 }
 
 async function undeleteProject(projectId, options = {}) {
@@ -386,6 +388,7 @@ async function expireDeletedProject(projectId) {
       ChatApiHandler.promises.destroyProject(deletedProject.project._id),
       hardDeleteDeletedFiles(deletedProject.project._id),
       ProjectAuditLogEntry.deleteMany({ projectId }),
+      Modules.promises.hooks.fire('projectExpired', deletedProject.project._id),
     ])
 
     await DeletedProject.updateOne(

@@ -127,6 +127,7 @@ describe('CompileController', function () {
               ],
               pdfDownloadDomain: 'https://compiles.overleaf.test',
               enableHybridPdfDownload: false,
+              forceNewDomainVariant: 'default',
             })
           )
         })
@@ -170,6 +171,7 @@ describe('CompileController', function () {
               ],
               pdfDownloadDomain: 'https://compiles.overleaf.test/zone/b',
               enableHybridPdfDownload: false,
+              forceNewDomainVariant: 'default',
             })
           )
         })
@@ -212,6 +214,7 @@ describe('CompileController', function () {
             status: this.status,
             outputFiles: this.outputFiles,
             enableHybridPdfDownload: false,
+            forceNewDomainVariant: 'default',
           })
         )
       })
@@ -353,7 +356,7 @@ describe('CompileController', function () {
       this.req.params = { Project_id: this.projectId }
 
       this.req.query = { pdfng: true }
-      this.project = { name: 'test namè' }
+      this.project = { name: 'test namè; 1' }
       this.ProjectGetter.getProject = sinon
         .stub()
         .callsArgWith(2, null, this.project)
@@ -376,9 +379,9 @@ describe('CompileController', function () {
       })
 
       it('should set the content-disposition header with a safe version of the project name', function () {
-        this.res.setContentDisposition
-          .calledWith('', { filename: 'test_nam_.pdf' })
-          .should.equal(true)
+        this.res.setContentDisposition.should.be.calledWith('inline', {
+          filename: 'test_namè__1.pdf',
+        })
       })
 
       it('should increment the pdf-downloads metric', function () {

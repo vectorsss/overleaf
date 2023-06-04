@@ -1,5 +1,4 @@
 /* eslint-disable
-    camelcase,
     no-return-assign,
     no-unused-vars,
 */
@@ -27,7 +26,7 @@ describe('LockManager - getting the lock', function () {
             return { auth() {} }
           },
         },
-        './Metrics': { inc() {} },
+        '@overleaf/metrics': { inc() {} },
         './Profiler': (Profiler = (function () {
           Profiler = class Profiler {
             static initClass() {
@@ -75,7 +74,7 @@ describe('LockManager - getting the lock', function () {
       const startTime = Date.now()
       let tries = 0
       this.LockManager.LOCK_TEST_INTERVAL = 5
-      this.LockManager.tryLock = (doc_id, callback) => {
+      this.LockManager.tryLock = (docId, callback) => {
         if (callback == null) {
           callback = function () {}
         }

@@ -927,7 +927,7 @@ const ProjectEntityUpdateHandler = {
               }
             )
           } else if (existingFile) {
-            return ProjectEntityUpdateHandler._replaceFile(
+            ProjectEntityUpdateHandler._replaceFile(
               projectId,
               existingFile._id,
               fsPath,
@@ -1302,6 +1302,19 @@ const ProjectEntityUpdateHandler = {
     source,
     callback
   ) {
+    if (!newName || typeof newName !== 'string') {
+      const err = new OError('invalid newName value', {
+        value: newName,
+        type: typeof newName,
+        projectId,
+        entityId,
+        entityType,
+        userId,
+        source,
+      })
+      logger.error({ err }, 'Invalid newName passed to renameEntity')
+      return callback(err)
+    }
     if (!SafePath.isCleanFilename(newName)) {
       return callback(new Errors.InvalidNameError('invalid element name'))
     }
@@ -1383,8 +1396,13 @@ const ProjectEntityUpdateHandler = {
             return callback(error)
           }
 
-          let { docs, files, folders } =
-            ProjectEntityHandler.getAllEntitiesFromProject(project)
+          let docs, files, folders
+          try {
+            ;({ docs, files, folders } =
+              ProjectEntityHandler.getAllEntitiesFromProject(project))
+          } catch (error) {
+            return callback(error)
+          }
           // _checkFileTree() must be passed the folders before docs and
           // files
           ProjectEntityUpdateHandler._checkFiletree(
@@ -1476,7 +1494,11 @@ const ProjectEntityUpdateHandler = {
           // the case only because getAllEntitiesFromProject() returns folders
           // in that order and resyncProjectHistory() calls us with the folders
           // first.
-          adjustPathsAfterFolderRename(entity.path, newPath)
+          try {
+            adjustPathsAfterFolderRename(entity.path, newPath)
+          } catch (error) {
+            return callback(error)
+          }
         }
       }
 

@@ -29,6 +29,16 @@ function log(req, data, samlAssertion) {
       if (data.error.tryAgain) {
         errSerialized.tryAgain = data.error.tryAgain
       }
+      logger.error(
+        {
+          providerId,
+          sessionId,
+          userId,
+          path,
+          query,
+        },
+        'SAML Error Encountered'
+      )
       data.error = errSerialized
     }
 
@@ -41,10 +51,14 @@ function log(req, data, samlAssertion) {
       samlLog.samlAssertion = JSON.stringify(samlAssertionForLog)
     }
 
-    if (data.error || samlAssertion) {
+    if (data.error) {
       data.body = {}
-      if (req.body.email) data.body.email = req.body.email
-      if (req.body.SAMLResponse) data.body.SAMLResponse = req.body.SAMLResponse
+      if (req.body.email) {
+        data.body.email = req.body.email
+      }
+      if (req.body.SAMLResponse) {
+        data.body.SAMLResponse = req.body.SAMLResponse
+      }
     }
 
     try {

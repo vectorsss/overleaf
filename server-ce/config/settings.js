@@ -118,20 +118,6 @@ const settings = {
         blockingKey({ doc_id }) {
           return `Blocking:${doc_id}`
         },
-        // track-changes:lock
-        historyLock({ doc_id }) {
-          return `HistoryLock:${doc_id}`
-        },
-        historyIndexLock({ project_id }) {
-          return `HistoryIndexLock:${project_id}`
-        },
-        // track-changes:history
-        uncompressedHistoryOps({ doc_id }) {
-          return `UncompressedHistoryOps:${doc_id}`
-        },
-        docsWithHistoryOps({ project_id }) {
-          return `DocsWithHistoryOps:${project_id}`
-        },
         // realtime
         clientsInProject({ project_id }) {
           return `clients_in_project:${project_id}`
@@ -142,7 +128,7 @@ const settings = {
       },
     }),
     fairy: redisConfig,
-    // track-changes and document-updater
+    // document-updater
     realtime: redisConfig,
     documentupdater: redisConfig,
     lock: redisConfig,
@@ -165,10 +151,6 @@ const settings = {
         },
       },
     },
-  },
-
-  trackchanges: {
-    continueOnError: true,
   },
 
   // Local disk caching
@@ -245,6 +227,7 @@ const settings = {
   // address and http/https protocol information.
 
   behindProxy: process.env.SHARELATEX_BEHIND_PROXY || false,
+  trustedProxyIps: process.env.SHARELATEX_TRUSTED_PROXY_IPS,
 
   i18n: {
     subdomainLang: {
@@ -271,7 +254,7 @@ const settings = {
       url: 'http://localhost:3054',
     },
     v1_history: {
-      url: 'http://localhost:3100/api',
+      url: process.env.V1_HISTORY_URL || 'http://localhost:3100/api',
       user: 'staging',
       pass: process.env.STAGING_PASSWORD,
     },

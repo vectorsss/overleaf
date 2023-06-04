@@ -10,9 +10,12 @@
 @gray-lightest: #f0f0f0;
 @white: #ffffff;
 @neutral-20: #e7e9ee;
+@neutral-30: #d0d5dd;
 @neutral-90: #1b222c;
 @neutral-40: #afb5c0;
 @neutral-10: #f4f5f6;
+@neutral-70: #495365;
+@neutral-80: #2f3a4c;
 
 // Styleguide colors
 @ol-blue-gray-0: #f4f5f8;
@@ -35,6 +38,8 @@
 @blue: #405ebf;
 @blue-10: #f1f4f9;
 @blue-30: #97b6e5;
+@blue-40: #6597e0;
+@blue-70: #214475;
 @blueDark: #040d2d;
 @green: #46a546;
 @green-10: #ebf6ea;
@@ -165,8 +170,10 @@
 @line-height-small: 1.5;
 
 @border-radius-base: 3px;
+@border-radius-base-new: 4px;
 @border-radius-large: 5px;
 @border-radius-small: 2px;
+@border-width-sm: 1px;
 @border-width-base: 3px;
 @border-color-base: @ol-blue-gray-2;
 
@@ -228,6 +235,10 @@
 @btn-danger-color: #fff;
 @btn-danger-bg: @ol-red;
 @btn-danger-border: transparent;
+
+@btn-danger-ghost-color: @red-50;
+@btn-danger-ghost-bg: transparent;
+@btn-danger-ghost-border: transparent;
 
 @btn-link-disabled-color: @gray-light;
 
@@ -402,7 +413,6 @@
 @navbar-border-radius: 0;
 @navbar-padding-horizontal: floor((@grid-gutter-width / 2));
 @navbar-padding-vertical: ((@navbar-height - @line-height-computed) / 2);
-@navbar-collapse-max-height: 380px;
 
 @navbar-default-color: #fff;
 @navbar-default-bg: @ol-blue-gray-6;
@@ -700,7 +710,9 @@
 @list-group-border-radius: @border-radius-base;
 
 //** Background color of single list elements on hover
-@list-group-hover-bg: #f5f5f5;
+@list-group-hover-bg: @component-active-bg;
+//** Text color of single list elements on hover
+@list-group-hover-color: @component-active-color;
 //** Text color of active list elements
 @list-group-active-color: @component-active-color;
 //** Background color of active list elements
@@ -772,24 +784,6 @@
 
 @well-bg: #f5f5f5;
 @well-border: darken(@well-bg, 7%);
-
-//== Badges
-//
-//##
-
-@badge-color: #fff;
-//** Linked badge text color on hover
-@badge-link-hover-color: #fff;
-@badge-bg: @gray-light;
-
-//** Badge text color in active nav link
-@badge-active-color: @link-color;
-//** Badge background color in active nav link
-@badge-active-bg: #fff;
-
-@badge-font-weight: bold;
-@badge-line-height: 1;
-@badge-border-radius: 10px;
 
 //== Breadcrumbs
 //
@@ -930,8 +924,14 @@
 @btn-border-width: 0;
 @btn-border-bottom-width: 0;
 
+// Shadows
+@box-shadow: 0px 4px 12px rgba(30, 37, 48, 0.12),
+  0px 2px 4px rgba(30, 37, 48, 0.08);
+
 // Cards
-@card-box-shadow: none;
+@card-border-radius: @border-radius-base-new;
+@card-gray-bg-color: @neutral-10; // only some variations of cards
+@card-box-shadow: @box-shadow; // only some variations of cards
 
 // Project table
 @structured-list-link-color: @ol-blue;
@@ -945,10 +945,10 @@
 @sidebar-color: @ol-blue-gray-2;
 @sidebar-link-color: #fff;
 @sidebar-active-border-radius: 0;
-@sidebar-active-bg: @ol-blue-gray-6;
+@sidebar-active-bg: @ol-blue-gray-4;
 @sidebar-active-color: #fff;
 @sidebar-active-font-weight: 700;
-@sidebar-hover-bg: @ol-blue-gray-4;
+@sidebar-hover-bg: @ol-blue-gray-6;
 @sidebar-hover-text-decoration: none;
 @v2-dash-pane-bg: @ol-blue-gray-4;
 @v2-dash-pane-link-color: #fff;
@@ -1157,3 +1157,21 @@
 
 @mobile-action-element-width: 48px;
 @mobile-action-element-height: @mobile-action-element-width;
+
+// React History
+@history-react-header-bg: @neutral-80;
+@history-react-header-color: #fff;
+@history-react-separator-color: @neutral-80;
+@history-main-bg: #fff;
+
+// Gradients
+@premium-gradient: linear-gradient(
+  246deg,
+  @blue-70 0%,
+  #254c84 29%,
+  @blue-40 97%
+);
+
+// z-index
+@z-index-plans-page-table-header-mobile: 100;
+@z-index-navbar: 200;

@@ -23,6 +23,8 @@ logger.initialize('docstore')
 if (Metrics.event_loop != null) {
   Metrics.event_loop.monitor(logger)
 }
+Metrics.leaked_sockets.monitor(logger)
+Metrics.open_sockets.monitor()
 
 const app = express()
 
@@ -90,6 +92,8 @@ app.use(function (error, req, res, next) {
   if (error instanceof Errors.NotFoundError) {
     return res.sendStatus(404)
   } else if (error instanceof Errors.DocModifiedError) {
+    return res.sendStatus(409)
+  } else if (error instanceof Errors.DocVersionDecrementedError) {
     return res.sendStatus(409)
   } else {
     return res.status(500).send('Oops, something went wrong')

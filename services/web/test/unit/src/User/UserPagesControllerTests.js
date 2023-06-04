@@ -67,6 +67,12 @@ describe('UserPagesController', function () {
       _getRedirectFromSession: sinon.stub(),
       setRedirectInSession: sinon.stub(),
     }
+    this.Features = {
+      hasFeature: sinon.stub().returns(false),
+    }
+    this.PersonalAccessTokenManager = {
+      listTokens: sinon.stub().returns([]),
+    }
     this.UserPagesController = SandboxedModule.require(modulePath, {
       requires: {
         '@overleaf/settings': this.settings,
@@ -76,6 +82,9 @@ describe('UserPagesController', function () {
         '../Errors/ErrorController': this.ErrorController,
         '../Authentication/AuthenticationController':
           this.AuthenticationController,
+        '../../infrastructure/Features': this.Features,
+        '../../../../modules/oauth2-server/app/src/OAuthPersonalAccessTokenManager':
+          this.PersonalAccessTokenManager,
         '../Authentication/SessionManager': this.SessionManager,
         request: (this.request = sinon.stub()),
       },

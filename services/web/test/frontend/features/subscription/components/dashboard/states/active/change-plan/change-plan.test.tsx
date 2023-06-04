@@ -1,7 +1,6 @@
 import { expect } from 'chai'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ChangePlan } from '../../../../../../../../../frontend/js/features/subscription/components/dashboard/states/active/change-plan/change-plan'
 import { groupPlans, plans } from '../../../../../fixtures/plans'
 import {
   annualActiveSubscription,
@@ -21,34 +20,25 @@ import {
   subscriptionUpdateUrl,
 } from '../../../../../../../../../frontend/js/features/subscription/data/subscription-url'
 import { renderActiveSubscription } from '../../../../../helpers/render-active-subscription'
+import * as useLocationModule from '../../../../../../../../../frontend/js/shared/hooks/use-location'
 
-describe('<ChangePlan />', function () {
-  let reloadStub: () => void
-  const originalLocation = window.location
+describe('<ChangePlanModal />', function () {
   const plansMetaTag = { name: 'ol-plans', value: plans }
+
+  let reloadStub: sinon.SinonStub
 
   beforeEach(function () {
     reloadStub = sinon.stub()
-    Object.defineProperty(window, 'location', {
-      value: { reload: reloadStub },
+    this.locationStub = sinon.stub(useLocationModule, 'useLocation').returns({
+      assign: sinon.stub(),
+      reload: reloadStub,
     })
   })
 
   afterEach(function () {
     cleanUpContext()
     fetchMock.reset()
-    Object.defineProperty(window, 'location', {
-      value: originalLocation,
-    })
-  })
-
-  it('does not render the UI when showChangePersonalPlan is false', function () {
-    window.metaAttributesCache.delete('ol-plans')
-    const { container } = renderWithSubscriptionDashContext(<ChangePlan />, {
-      metaTags: [plansMetaTag],
-    })
-
-    expect(container.firstChild).to.be.null
+    this.locationStub.restore()
   })
 
   it('renders the individual plans table and group plans UI', async function () {

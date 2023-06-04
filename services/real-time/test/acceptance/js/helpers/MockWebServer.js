@@ -1,5 +1,4 @@
 /* eslint-disable
-    camelcase,
     no-return-assign,
 */
 // TODO: This file was created by bulk-decaffeinate.
@@ -17,49 +16,54 @@ const express = require('express')
 module.exports = MockWebServer = {
   projects: {},
   privileges: {},
+  userMetadata: {},
 
-  createMockProject(project_id, privileges, project) {
-    MockWebServer.privileges[project_id] = privileges
-    return (MockWebServer.projects[project_id] = project)
+  createMockProject(projectId, privileges, project, metadataByUser) {
+    MockWebServer.privileges[projectId] = privileges
+    MockWebServer.userMetadata[projectId] = metadataByUser
+    return (MockWebServer.projects[projectId] = project)
   },
 
-  joinProject(project_id, user_id, callback) {
+  joinProject(projectId, userId, callback) {
     if (callback == null) {
       callback = function () {}
     }
-    return callback(
-      null,
-      MockWebServer.projects[project_id],
-      MockWebServer.privileges[project_id][user_id] ||
-        MockWebServer.privileges[project_id]['anonymous-user']
-    )
+    const project = MockWebServer.projects[projectId]
+    const privilegeLevel =
+      MockWebServer.privileges[projectId][userId] ||
+      MockWebServer.privileges[projectId]['anonymous-user']
+    const userMetadata = MockWebServer.userMetadata[projectId]?.[userId]
+    return callback(null, project, privilegeLevel, userMetadata)
   },
 
   joinProjectRequest(req, res, next) {
-    const { project_id } = req.params
-    const { user_id } = req.query
-    if (project_id === '404404404404404404404404') {
+    const { project_id: projectId } = req.params
+    const { user_id: userId } = req.query
+    if (projectId === '404404404404404404404404') {
       // not-found
       return res.status(404).send()
     }
-    if (project_id === '403403403403403403403403') {
+    if (projectId === '403403403403403403403403') {
       // forbidden
       return res.status(403).send()
     }
-    if (project_id === '429429429429429429429429') {
+    if (projectId === '429429429429429429429429') {
       // rate-limited
       return res.status(429).send()
     } else {
       return MockWebServer.joinProject(
-        project_id,
-        user_id,
-        (error, project, privilegeLevel) => {
+        projectId,
+        userId,
+        (error, project, privilegeLevel, userMetadata) => {
           if (error != null) {
             return next(error)
           }
           return res.json({
             project,
             privilegeLevel,
+            isRestrictedUser: !!userMetadata?.isRestrictedUser,
+            isTokenMember: !!userMetadata?.isTokenMember,
+            isInvitedMember: !!userMetadata?.isInvitedMember,
           })
         }
       )

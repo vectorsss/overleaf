@@ -4,7 +4,7 @@ set -ex
 
 sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list && apt-get update
 
-apt-get install ghostscript imagemagick optipng --yes
+apt-get install ghostscript imagemagick optipng iproute2 --yes
 
 rm -rf /var/lib/apt/lists/*
 

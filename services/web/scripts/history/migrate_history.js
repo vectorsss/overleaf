@@ -2,6 +2,25 @@
 process.env.MONGO_SOCKET_TIMEOUT =
   parseInt(process.env.MONGO_SOCKET_TIMEOUT, 10) || 3600000
 
+const fs = require('fs')
+
+if (fs.existsSync('/etc/container_environment.json')) {
+  try {
+    const envData = JSON.parse(
+      fs.readFileSync('/etc/container_environment.json', 'utf8')
+    )
+    for (const [key, value] of Object.entries(envData)) {
+      process.env[key] = value
+    }
+  } catch (err) {
+    console.error(
+      'cannot read /etc/container_environment.json, the script needs to be run as root',
+      err
+    )
+    process.exit(1)
+  }
+}
+
 const VERSION = '0.9.0-cli'
 const {
   countProjects,
@@ -11,7 +30,6 @@ const {
 } = require('../../modules/history-migration/app/src/HistoryUpgradeHelper')
 const { waitForDb } = require('../../app/src/infrastructure/mongodb')
 const minimist = require('minimist')
-const fs = require('fs')
 const util = require('util')
 const pLimit = require('p-limit')
 const logger = require('@overleaf/logger')
@@ -34,6 +52,7 @@ const argv = minimist(process.argv.slice(2), {
     'use-query-hint',
     'retry-failed',
     'archive-on-failure',
+    'force-clean',
   ],
   string: ['output', 'user-id'],
   alias: {
@@ -91,14 +110,6 @@ async function findProjectsToMigrate() {
     process.exit(1)
   }
 
-  // Find the total number of history records for the projects we need to migrate
-  let docHistoryCount = 0
-  for await (const project of projectsToMigrate) {
-    const count = await countDocHistory({ project_id: project._id })
-    docHistoryCount += count
-  }
-
-  console.log('Total history records to migrate:', docHistoryCount)
   return projectsToMigrate
 }
 
@@ -136,7 +147,7 @@ async function migrateProjects(projectsToMigrate) {
   }
   // send log output for each migration to a file
   const output = fs.createWriteStream(argv.output, { flags: 'a' })
-  console.log(`Writing log output to ${argv.output}`)
+  console.log(`Writing log output to ${process.cwd()}/${argv.output}`)
   const logger = new console.Console({ stdout: output })
   function logJson(obj) {
     logger.log(JSON.stringify(obj))
@@ -168,6 +179,7 @@ async function migrateProjects(projectsToMigrate) {
     convertLargeDocsToFile: argv['convert-large-docs-to-file'],
     userId: argv['user-id'],
     reason: VERSION,
+    forceClean: argv['force-clean'],
   }
   async function _migrateProject(project) {
     if (INTERRUPT) {
@@ -241,8 +253,12 @@ async function main() {
   console.log('Projects migrated: ', projectsMigrated)
   console.log('Projects failed: ', projectsFailed)
   if (projectsFailed > 0) {
-    console.log(`Log output written to ${argv.output}`)
-    console.log('Please check the log for errors.')
+    console.log('------------------------------------------------------')
+    console.log(`Log output written to ${process.cwd()}/${argv.output}`)
+    console.log(
+      'Please check the log for errors. Attach the content of the file when contacting support.'
+    )
+    console.log('------------------------------------------------------')
   }
   if (INTERRUPT) {
     console.log('Migration interrupted, please run again to continue.')

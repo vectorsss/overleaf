@@ -1,6 +1,6 @@
-const Metrics = require('@overleaf/metrics')
-const { ObjectId } = require('mongodb')
+const { ObjectId, ReadPreference } = require('mongodb')
 const OError = require('@overleaf/o-error')
+const Settings = require('@overleaf/settings')
 const { getNativeDb } = require('./Mongoose')
 
 if (
@@ -11,6 +11,11 @@ if (
     'It looks like unit tests are running, but you are connecting to Mongo. Missing a stub?'
   )
 }
+
+const READ_PREFERENCE_PRIMARY = ReadPreference.primary.mode
+const READ_PREFERENCE_SECONDARY = Settings.mongo.hasSecondaries
+  ? ReadPreference.secondary.mode
+  : ReadPreference.secondaryPreferred.mode
 
 let setupDbPromise
 async function waitForDb() {
@@ -23,7 +28,6 @@ async function waitForDb() {
 const db = {}
 async function setupDb() {
   const internalDb = await getNativeDb()
-  Metrics.mongodb.monitor(internalDb)
 
   db.contacts = internalDb.collection('contacts')
   db.deletedFiles = internalDb.collection('deletedFiles')
@@ -114,4 +118,6 @@ module.exports = {
   getCollectionInternal,
   dropTestDatabase,
   waitForDb,
+  READ_PREFERENCE_PRIMARY,
+  READ_PREFERENCE_SECONDARY,
 }

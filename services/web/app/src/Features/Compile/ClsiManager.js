@@ -24,6 +24,22 @@ const Errors = require('../Errors/Errors')
 
 const VALID_COMPILERS = ['pdflatex', 'latex', 'xelatex', 'lualatex']
 
+function collectMetricsOnBlgFiles(outputFiles) {
+  let topLevel = 0
+  let nested = 0
+  for (const outputFile of outputFiles) {
+    if (outputFile.type === 'blg') {
+      if (outputFile.path.includes('/')) {
+        nested++
+      } else {
+        topLevel++
+      }
+    }
+  }
+  Metrics.count('blg_output_file', topLevel, 1, { path: 'top-level' })
+  Metrics.count('blg_output_file', nested, 1, { path: 'nested' })
+}
+
 const ClsiManager = {
   sendRequest(projectId, userId, options, callback) {
     if (options == null) {
@@ -134,7 +150,14 @@ const ClsiManager = {
       url: compilerUrl,
       method: 'POST',
     }
-    ClsiManager._makeRequest(projectId, userId, compileGroup, opts, callback)
+    ClsiManager._makeRequest(
+      projectId,
+      userId,
+      compileGroup,
+      compileBackendClass,
+      opts,
+      callback
+    )
   },
 
   deleteAuxFiles(projectId, userId, options, clsiserverid, callback) {
@@ -156,6 +179,7 @@ const ClsiManager = {
       projectId,
       userId,
       compileGroup,
+      compileBackendClass,
       opts,
       clsiserverid,
       clsiErr => {
@@ -257,6 +281,7 @@ const ClsiManager = {
               projectId,
               response && response.compile && response.compile.outputFiles
             )
+            collectMetricsOnBlgFiles(outputFiles)
             const compile = (response && response.compile) || {}
             const status = compile.status
             const stats = compile.stats
@@ -283,13 +308,17 @@ const ClsiManager = {
     projectId,
     userId,
     compileGroup,
+    compileBackendClass,
     opts,
     clsiserverid,
     callback
   ) {
     if (clsiserverid) {
       // ignore cookies and newBackend, go straight to the clsi node
-      opts.qs = Object.assign({ compileGroup, clsiserverid }, opts.qs)
+      opts.qs = Object.assign(
+        { compileGroup, compileBackendClass, clsiserverid },
+        opts.qs
+      )
       request(opts, (err, response, body) => {
         if (err) {
           return callback(
@@ -299,11 +328,25 @@ const ClsiManager = {
         callback(null, response, body)
       })
     } else {
-      ClsiManager._makeRequest(projectId, userId, compileGroup, opts, callback)
+      ClsiManager._makeRequest(
+        projectId,
+        userId,
+        compileGroup,
+        compileBackendClass,
+        opts,
+        callback
+      )
     }
   },
 
-  _makeRequest(projectId, userId, compileGroup, opts, callback) {
+  _makeRequest(
+    projectId,
+    userId,
+    compileGroup,
+    compileBackendClass,
+    opts,
+    callback
+  ) {
     async.series(
       {
         currentBackend(cb) {
@@ -312,6 +355,7 @@ const ClsiManager = {
             projectId,
             userId,
             compileGroup,
+            compileBackendClass,
             (err, jar, clsiServerId) => {
               if (err != null) {
                 return callback(
@@ -338,6 +382,7 @@ const ClsiManager = {
                   projectId,
                   userId,
                   compileGroup,
+                  compileBackendClass,
                   response,
                   clsiServerId,
                   (err, newClsiServerId) => {
@@ -373,6 +418,7 @@ const ClsiManager = {
             projectId,
             userId,
             compileGroup,
+            compileBackendClass,
             opts,
             (err, response, body) => {
               if (err != null) {
@@ -419,7 +465,14 @@ const ClsiManager = {
     )
   },
 
-  _makeNewBackendRequest(projectId, userId, compileGroup, baseOpts, callback) {
+  _makeNewBackendRequest(
+    projectId,
+    userId,
+    compileGroup,
+    compileBackendClass,
+    baseOpts,
+    callback
+  ) {
     if (Settings.apis.clsi_new == null || Settings.apis.clsi_new.url == null) {
       return callback()
     }
@@ -434,6 +487,7 @@ const ClsiManager = {
       projectId,
       userId,
       compileGroup,
+      compileBackendClass,
       (err, jar, clsiServerId) => {
         if (err != null) {
           return callback(
@@ -458,6 +512,7 @@ const ClsiManager = {
             projectId,
             userId,
             compileGroup,
+            compileBackendClass,
             response,
             clsiServerId,
             err => {
@@ -521,6 +576,7 @@ const ClsiManager = {
       projectId,
       userId,
       compileGroup,
+      compileBackendClass,
       opts,
       (err, response, body, clsiServerId) => {
         if (err != null) {
@@ -678,7 +734,12 @@ const ClsiManager = {
   },
 
   getContentFromDocUpdaterIfMatch(projectId, project, options, callback) {
-    const projectStateHash = ClsiStateManager.computeHash(project, options)
+    let projectStateHash
+    try {
+      projectStateHash = ClsiStateManager.computeHash(project, options)
+    } catch (err) {
+      return callback(err)
+    }
     DocumentUpdaterHandler.getProjectDocsIfMatch(
       projectId,
       projectStateHash,
@@ -724,7 +785,16 @@ const ClsiManager = {
     docUpdaterDocs,
     callback
   ) {
-    const docPath = ProjectEntityHandler.getAllDocPathsFromProject(project)
+    let docPath
+    try {
+      docPath = ProjectEntityHandler.getAllDocPathsFromProject(project)
+    } catch (err) {
+      return callback(
+        OError.tag(err, 'Failed to get all doc paths from project', {
+          projectId,
+        })
+      )
+    }
     const docs = {}
     for (const doc of docUpdaterDocs || []) {
       const path = docPath[doc._id]
@@ -938,6 +1008,7 @@ const ClsiManager = {
         projectId,
         userId,
         compileGroup,
+        compileBackendClass,
         opts,
         clsiserverid,
         (err, response, body) => {

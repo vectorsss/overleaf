@@ -20,6 +20,7 @@ var http = require('http');
 var https = require('https');
 var url = require('url');
 const xml2js = require('xml2js')
+const Features = require('../../infrastructure/Features')
 
 async function settingsPage(req, res) {
   const userId = SessionManager.getLoggedInUserId(req.session)
@@ -72,8 +73,26 @@ async function settingsPage(req, res) {
   const user = await UserGetter.promises.getUser(userId)
   if (!user) {
     // The user has just deleted their account.
-    return res.redirect('/logout')
+    return UserSessionsManager.revokeAllUserSessions({ _id: userId }, [], () =>
+      res.redirect('/')
+    )
   }
+
+  const showPersonalAccessToken =
+    !Features.hasFeature('saas') || req.query?.personal_access_token === 'true'
+  let personalAccessTokens
+  if (showPersonalAccessToken) {
+    try {
+      // require this here because module may not be included in some versions
+      const PersonalAccessTokenManager = require('../../../../modules/oauth2-server/app/src/OAuthPersonalAccessTokenManager')
+      personalAccessTokens = await PersonalAccessTokenManager.listTokens(
+        user._id
+      )
+    } catch (error) {
+      logger.error(OError.tag(error))
+    }
+  }
+
   res.render('user/settings', {
     title: 'account_settings',
     user: {
@@ -116,6 +135,9 @@ async function settingsPage(req, res) {
     ssoErrorMessage,
     thirdPartyIds: UserPagesController._restructureThirdPartyIds(user),
     projectSyncSuccessMessage,
+    showPersonalAccessToken,
+    personalAccessTokens,
+    emailAddressLimit: Settings.emailAddressLimit,
   })
 }
 
@@ -290,10 +312,6 @@ const UserPagesController = {
    */
   oneTimeLoginPage(req, res, next) {
     res.render('user/one_time_login')
-  },
-
-  logoutPage(req, res) {
-    res.render('user/logout')
   },
 
   renderReconfirmAccountPage(req, res) {

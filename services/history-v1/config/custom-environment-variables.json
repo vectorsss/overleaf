@@ -18,8 +18,10 @@
       "unlockBeforeDelete": "GCS_UNLOCK_BEFORE_DELETE",
       "endpoint": {
         "apiEndpoint": "GCS_API_ENDPOINT",
-        "apiScheme": "GCS_API_SCHEME",
         "projectId": "GCS_PROJECT_ID"
+      },
+      "retryOptions": {
+        "maxRetries": "GCS_MAX_RETRIES"
       }
     },
     "fallback": {

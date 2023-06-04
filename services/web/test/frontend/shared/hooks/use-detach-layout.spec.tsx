@@ -34,12 +34,13 @@ const DetachLayoutTest = () => {
   )
 }
 
-// eslint-disable-next-line mocha/no-skipped-tests
-describe.skip('useDetachLayout', function () {
+describe('useDetachLayout', function () {
   beforeEach(function () {
     window.metaAttributesCache = new Map()
+    window.metaAttributesCache.set('ol-preventCompileOnLoad', true)
     cy.stub(window, 'open').as('openWindow')
     cy.stub(window, 'close').as('closeWindow')
+    cy.interceptEvents()
   })
 
   afterEach(function () {
@@ -61,7 +62,7 @@ describe.skip('useDetachLayout', function () {
     // 2. detach
     cy.get('#detach').click()
     cy.get('@openWindow').should(
-      'be.calledOnceWith',
+      'have.been.calledOnceWith',
       Cypress.sinon.match(/\/detached$/),
       '_blank'
     )
@@ -70,7 +71,8 @@ describe.skip('useDetachLayout', function () {
     cy.get('#role').should('have.text', 'detacher')
   })
 
-  it('detacher role', function () {
+  // eslint-disable-next-line mocha/no-skipped-tests
+  it.skip('detacher role', function () {
     // 1. create hook in detacher mode
     window.metaAttributesCache.set('ol-detachRole', 'detacher')
 
@@ -94,7 +96,7 @@ describe.skip('useDetachLayout', function () {
     })
 
     // 2. simulate connected detached tab
-    cy.get('@postDetachMessage').should('be.calledWith', {
+    cy.get('@postDetachMessage').should('have.been.calledWith', {
       role: 'detacher',
       event: 'up',
     })
@@ -133,13 +135,14 @@ describe.skip('useDetachLayout', function () {
     cy.get('#isLinked').should('not.be.checked')
     cy.get('#isLinking').should('not.be.checked')
     cy.get('#role').should('have.text', 'none')
-    cy.get('@postDetachMessage').should('be.calledWith', {
+    cy.get('@postDetachMessage').should('have.been.calledWith', {
       role: 'detacher',
       event: 'reattach',
     })
   })
 
-  it('reset detacher role when other detacher tab connects', function () {
+  // eslint-disable-next-line mocha/no-skipped-tests
+  it.skip('reset detacher role when other detacher tab connects', function () {
     // 1. create hook in detacher mode
     window.metaAttributesCache.set('ol-detachRole', 'detacher')
 
@@ -224,7 +227,7 @@ describe.skip('useDetachLayout', function () {
     cy.get('#isLinked').should('be.checked')
     cy.get('#isLinking').should('not.be.checked')
     cy.get('#role').should('have.text', 'detached')
-    cy.get('@postDetachMessage').should('be.calledWith', {
+    cy.get('@postDetachMessage').should('have.been.calledWith', {
       role: 'detached',
       event: 'up',
     })
@@ -240,6 +243,6 @@ describe.skip('useDetachLayout', function () {
     cy.get('#isLinked').should('not.be.checked')
     cy.get('#isLinking').should('not.be.checked')
     cy.get('#role').should('have.text', 'detached')
-    cy.get('@closeWindow').should('be.called')
+    cy.get('@closeWindow').should('have.been.called')
   })
 })

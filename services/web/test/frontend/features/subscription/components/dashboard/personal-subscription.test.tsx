@@ -1,5 +1,10 @@
 import { expect } from 'chai'
-import { screen } from '@testing-library/react'
+import {
+  screen,
+  fireEvent,
+  waitForElementToBeRemoved,
+  within,
+} from '@testing-library/react'
 import PersonalSubscription from '../../../../../../frontend/js/features/subscription/components/dashboard/personal-subscription'
 import {
   annualActiveSubscription,
@@ -11,6 +16,10 @@ import {
   cleanUpContext,
   renderWithSubscriptionDashContext,
 } from '../../helpers/render-with-subscription-dash-context'
+import { reactivateSubscriptionUrl } from '../../../../../../frontend/js/features/subscription/data/subscription-url'
+import fetchMock from 'fetch-mock'
+import sinon from 'sinon'
+import * as useLocationModule from '../../../../../../frontend/js/shared/hooks/use-location'
 
 describe('<PersonalSubscription />', function () {
   afterEach(function () {
@@ -39,6 +48,20 @@ describe('<PersonalSubscription />', function () {
   })
 
   describe('subscription states  ', function () {
+    let reloadStub: sinon.SinonStub
+
+    beforeEach(function () {
+      reloadStub = sinon.stub()
+      this.locationStub = sinon.stub(useLocationModule, 'useLocation').returns({
+        assign: sinon.stub(),
+        reload: reloadStub,
+      })
+    })
+
+    afterEach(function () {
+      this.locationStub.restore()
+    })
+
     it('renders the active dash', function () {
       renderWithSubscriptionDashContext(<PersonalSubscription />, {
         metaTags: [
@@ -70,6 +93,33 @@ describe('<PersonalSubscription />', function () {
 
       screen.getByRole('link', { name: 'View Your Invoices' })
       screen.getByRole('button', { name: 'Reactivate your subscription' })
+    })
+
+    it('reactivates canceled plan', async function () {
+      renderWithSubscriptionDashContext(<PersonalSubscription />, {
+        metaTags: [{ name: 'ol-subscription', value: canceledSubscription }],
+      })
+
+      const reactivateBtn = screen.getByRole<HTMLButtonElement>('button', {
+        name: 'Reactivate your subscription',
+      })
+
+      // 1st click - fail
+      fetchMock.postOnce(reactivateSubscriptionUrl, 400)
+      fireEvent.click(reactivateBtn)
+      expect(reactivateBtn.disabled).to.be.true
+      await fetchMock.flush(true)
+      expect(reactivateBtn.disabled).to.be.false
+      expect(reloadStub).not.to.have.been.called
+      fetchMock.reset()
+
+      // 2nd click - success
+      fetchMock.postOnce(reactivateSubscriptionUrl, 200)
+      fireEvent.click(reactivateBtn)
+      await fetchMock.flush(true)
+      expect(reloadStub).to.have.been.calledOnce
+      expect(reactivateBtn.disabled).to.be.true
+      fetchMock.reset()
     })
 
     it('renders the expired dash', function () {
@@ -144,5 +194,46 @@ describe('<PersonalSubscription />', function () {
 
       screen.getByText('Change plan')
     })
+  })
+
+  it('shows different recurly email address section', async function () {
+    fetchMock.post('/user/subscription/account/email', 200)
+    const usersEmail = 'foo@example.com'
+    renderWithSubscriptionDashContext(<PersonalSubscription />, {
+      metaTags: [
+        { name: 'ol-subscription', value: annualActiveSubscription },
+        { name: 'ol-usersEmail', value: usersEmail },
+      ],
+    })
+
+    const billingText = screen.getByText(
+      /your billing email address is currently/i
+    ).textContent
+    expect(billingText).to.contain(
+      `Your billing email address is currently ${annualActiveSubscription.recurly.account.email}.` +
+        ` If needed you can update your billing address to ${usersEmail}`
+    )
+
+    const submitBtn = screen.getByRole<HTMLButtonElement>('button', {
+      name: /update/i,
+    })
+    expect(submitBtn.disabled).to.be.false
+    fireEvent.click(submitBtn)
+    expect(submitBtn.disabled).to.be.true
+    expect(
+      screen.getByRole<HTMLButtonElement>('button', { name: /updating/i })
+        .disabled
+    ).to.be.true
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByText(/your billing email address is currently/i)
+    )
+
+    within(screen.getByRole('alert')).getByText(
+      /your billing email address was successfully updated/i
+    )
+
+    expect(screen.queryByRole('button', { name: /update/i })).to.be.null
+    expect(screen.queryByRole('button', { name: /updating/i })).to.be.null
   })
 })

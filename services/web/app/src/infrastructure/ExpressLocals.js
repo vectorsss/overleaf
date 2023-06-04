@@ -7,8 +7,10 @@ const { URL } = require('url')
 const Path = require('path')
 const moment = require('moment')
 const request = require('request')
+const contentDisposition = require('content-disposition')
 const Features = require('./Features')
 const SessionManager = require('../Features/Authentication/SessionManager')
+const SplitTestMiddleware = require('../Features/SplitTests/SplitTestMiddleware')
 const PackageVersions = require('./PackageVersions')
 const Modules = require('./Modules')
 const {
@@ -18,6 +20,7 @@ const {
 const {
   addOptionalCleanupHandlerAfterDrainingConnections,
 } = require('./GracefulShutdown')
+const { expressify } = require('../util/promises')
 
 const IEEE_BRAND_ID = Settings.ieeeBrandId
 
@@ -76,6 +79,15 @@ function getWebpackAssets(entrypoint, section) {
 }
 
 module.exports = function (webRouter, privateApiRouter, publicApiRouter) {
+  webRouter.use(
+    expressify(
+      SplitTestMiddleware.loadAssignmentsInLocals([
+        'design-system-updates',
+        'features-page',
+      ])
+    )
+  )
+
   if (process.env.NODE_ENV === 'development') {
     // In the dev-env, delay requests until we fetched the manifest once.
     webRouter.use(function (req, res, next) {
@@ -93,13 +105,11 @@ module.exports = function (webRouter, privateApiRouter, publicApiRouter) {
   })
 
   function addSetContentDisposition(req, res, next) {
-    res.setContentDisposition = function (type, opts) {
-      const directives = _.map(
-        opts,
-        (v, k) => `${k}="${encodeURIComponent(v)}"`
+    res.setContentDisposition = function (type, { filename }) {
+      res.setHeader(
+        'Content-Disposition',
+        contentDisposition(filename, { type })
       )
-      const contentDispositionValue = `${type}; ${directives.join('; ')}`
-      res.setHeader('Content-Disposition', contentDispositionValue)
     }
     next()
   }
@@ -126,7 +136,7 @@ module.exports = function (webRouter, privateApiRouter, publicApiRouter) {
     const userId = SessionManager.getLoggedInUserId(req.session)
     if (cdnBlocked && req.session.cdnBlocked == null) {
       logger.debug(
-        { user_id: userId, ip: req != null ? req.ip : undefined },
+        { userId, ip: req != null ? req.ip : undefined },
         'cdnBlocked for user, not using it and turning it off for future requets'
       )
       Metrics.inc('no_cdn', 1, {
@@ -367,6 +377,7 @@ module.exports = function (webRouter, privateApiRouter, publicApiRouter) {
     res.locals.ExposedSettings = {
       isOverleaf: Settings.overleaf != null,
       appName: Settings.appName,
+      adminEmail: Settings.adminEmail,
       dropboxAppName:
         Settings.apis.thirdPartyDataStore?.dropboxAppName || 'Overleaf',
       hasSamlBeta: req.session.samlBeta,

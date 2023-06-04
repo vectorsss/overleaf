@@ -11,9 +11,7 @@ const EditorController = require('../Editor/EditorController')
 const ProjectHelper = require('./ProjectHelper')
 const metrics = require('@overleaf/metrics')
 const { User } = require('../../models/User')
-const TagsHandler = require('../Tags/TagsHandler')
 const SubscriptionLocator = require('../Subscription/SubscriptionLocator')
-const NotificationsHandler = require('../Notifications/NotificationsHandler')
 const LimitationsManager = require('../Subscription/LimitationsManager')
 const Settings = require('@overleaf/settings')
 const AuthorizationManager = require('../Authorization/AuthorizationManager')
@@ -28,50 +26,25 @@ const CollaboratorsGetter = require('../Collaborators/CollaboratorsGetter')
 const ProjectEntityHandler = require('./ProjectEntityHandler')
 const TpdsProjectFlusher = require('../ThirdPartyDataStore/TpdsProjectFlusher')
 const UserGetter = require('../User/UserGetter')
-const NotificationsBuilder = require('../Notifications/NotificationsBuilder')
-const { V1ConnectionError } = require('../Errors/Errors')
 const Features = require('../../infrastructure/Features')
 const BrandVariationsHandler = require('../BrandVariations/BrandVariationsHandler')
 const UserController = require('../User/UserController')
 const AnalyticsManager = require('../Analytics/AnalyticsManager')
-const Modules = require('../../infrastructure/Modules')
 const SplitTestHandler = require('../SplitTests/SplitTestHandler')
 const FeaturesUpdater = require('../Subscription/FeaturesUpdater')
 const SpellingHandler = require('../Spelling/SpellingHandler')
-const UserPrimaryEmailCheckHandler = require('../User/UserPrimaryEmailCheckHandler')
 const { hasAdminAccess } = require('../Helpers/AdminAuthorizationHelper')
 const InstitutionsFeatures = require('../Institutions/InstitutionsFeatures')
-const SubscriptionViewModelBuilder = require('../Subscription/SubscriptionViewModelBuilder')
-const SurveyHandler = require('../Survey/SurveyHandler')
-const { expressify } = require('../../util/promises')
-const ProjectListController = require('./ProjectListController')
 const ProjectAuditLogHandler = require('./ProjectAuditLogHandler')
 const PublicAccessLevels = require('../Authorization/PublicAccessLevels')
+
+const VISUAL_EDITOR_NAMING_SPLIT_TEST_MIN_SIGNUP_DATE = new Date('2023-04-17')
 
 /**
  * @typedef {import("./types").GetProjectsRequest} GetProjectsRequest
  * @typedef {import("./types").GetProjectsResponse} GetProjectsResponse
  * @typedef {import("./types").Project} Project
  */
-
-const _ssoAvailable = (affiliation, session, linkedInstitutionIds) => {
-  if (!affiliation.institution) return false
-
-  // institution.confirmed is for the domain being confirmed, not the email
-  // Do not show SSO UI for unconfirmed domains
-  if (!affiliation.institution.confirmed) return false
-
-  // Could have multiple emails at the same institution, and if any are
-  // linked to the institution then do not show notification for others
-  if (
-    linkedInstitutionIds.indexOf(affiliation.institution.id.toString()) === -1
-  ) {
-    if (affiliation.institution.ssoEnabled) return true
-    if (affiliation.institution.ssoBeta && session.samlBeta) return true
-    return false
-  }
-  return false
-}
 
 const ProjectController = {
   _isInPercentageRollout(rolloutName, objectId, percentage) {
@@ -200,9 +173,9 @@ const ProjectController = {
 
     ProjectDeleter.archiveProject(projectId, userId, function (err) {
       if (err != null) {
-        return next(err)
+        next(err)
       } else {
-        return res.sendStatus(200)
+        res.sendStatus(200)
       }
     })
   },
@@ -213,9 +186,9 @@ const ProjectController = {
 
     ProjectDeleter.unarchiveProject(projectId, userId, function (err) {
       if (err != null) {
-        return next(err)
+        next(err)
       } else {
-        return res.sendStatus(200)
+        res.sendStatus(200)
       }
     })
   },
@@ -226,9 +199,9 @@ const ProjectController = {
 
     ProjectDeleter.trashProject(projectId, userId, function (err) {
       if (err != null) {
-        return next(err)
+        next(err)
       } else {
-        return res.sendStatus(200)
+        res.sendStatus(200)
       }
     })
   },
@@ -239,9 +212,9 @@ const ProjectController = {
 
     ProjectDeleter.untrashProject(projectId, userId, function (err) {
       if (err != null) {
-        return next(err)
+        next(err)
       } else {
-        return res.sendStatus(200)
+        res.sendStatus(200)
       }
     })
   },
@@ -394,8 +367,13 @@ const ProjectController = {
       if (err != null) {
         return next(err)
       }
-      const { docs, files } =
-        ProjectEntityHandler.getAllEntitiesFromProject(project)
+      let docs, files
+      try {
+        ;({ docs, files } =
+          ProjectEntityHandler.getAllEntitiesFromProject(project))
+      } catch (err) {
+        return next(err)
+      }
       const entities = docs
         .concat(files)
         // Sort by path ascending
@@ -406,371 +384,6 @@ const ProjectController = {
         }))
       res.json({ project_id: projectId, entities })
     })
-  },
-
-  async projectListPage(req, res, next) {
-    try {
-      const assignment = await SplitTestHandler.promises.getAssignment(
-        req,
-        res,
-        'project-dashboard-react'
-      )
-      if (assignment.variant === 'enabled') {
-        ProjectListController.projectListReactPage(req, res, next)
-      } else {
-        ProjectController._projectListAngularPage(req, res, next)
-      }
-    } catch (error) {
-      logger.warn(
-        { err: error },
-        'failed to get "project-dashboard-react" split test assignment'
-      )
-      ProjectController._projectListAngularPage(req, res, next)
-    }
-  },
-
-  _projectListAngularPage(req, res, next) {
-    const timer = new metrics.Timer('project-list')
-    const userId = SessionManager.getLoggedInUserId(req.session)
-    const currentUser = SessionManager.getSessionUser(req.session)
-    async.parallel(
-      {
-        tags(cb) {
-          TagsHandler.getAllTags(userId, cb)
-        },
-        notifications(cb) {
-          NotificationsHandler.getUserNotifications(userId, cb)
-        },
-        projects(cb) {
-          ProjectGetter.findAllUsersProjects(
-            userId,
-            'name lastUpdated lastUpdatedBy publicAccesLevel archived trashed owner_ref tokens',
-            cb
-          )
-        },
-        hasSubscription(cb) {
-          LimitationsManager.hasPaidSubscription(
-            currentUser,
-            (error, hasPaidSubscription) => {
-              if (error != null && error instanceof V1ConnectionError) {
-                return cb(null, true)
-              }
-              cb(error, hasPaidSubscription)
-            }
-          )
-        },
-        user(cb) {
-          User.findById(
-            userId,
-            'email emails featureSwitches overleaf awareOfV2 features lastLoginIp lastPrimaryEmailCheck signUpDate',
-            cb
-          )
-        },
-        userEmailsData(cb) {
-          const result = { list: [], allInReconfirmNotificationPeriods: [] }
-
-          UserGetter.getUserFullEmails(userId, (error, fullEmails) => {
-            if (error && error instanceof V1ConnectionError) {
-              return cb(null, result)
-            }
-
-            if (!Features.hasFeature('affiliations')) {
-              result.list = fullEmails
-              return cb(null, result)
-            }
-            Modules.hooks.fire(
-              'allInReconfirmNotificationPeriodsForUser',
-              fullEmails,
-              (error, results) => {
-                if (error != null) {
-                  return cb(error)
-                }
-
-                // Module.hooks.fire accepts multiple methods
-                // and does async.series
-                const allInReconfirmNotificationPeriods =
-                  (results && results[0]) || []
-                return cb(null, {
-                  list: fullEmails,
-                  allInReconfirmNotificationPeriods,
-                })
-              }
-            )
-          })
-        },
-        usersBestSubscription(cb) {
-          if (!Features.hasFeature('saas')) {
-            return cb()
-          }
-          SubscriptionViewModelBuilder.getBestSubscription(
-            { _id: userId },
-            (err, subscription) => {
-              if (err) {
-                // do not fail loading the project list when fetching the best subscription fails
-                logger.error(
-                  { userId, err },
-                  'Could not get usersBestSubscription'
-                )
-                return cb(null, { type: 'error' })
-              }
-              cb(null, subscription)
-            }
-          )
-        },
-        userIsMemberOfGroupSubscription(cb) {
-          LimitationsManager.userIsMemberOfGroupSubscription(
-            currentUser,
-            (error, isMember) => {
-              if (error) {
-                logger.error(
-                  { err: error },
-                  'Failed to check whether user is a member of group subscription'
-                )
-                return cb(null, false)
-              }
-              cb(null, isMember)
-            }
-          )
-        },
-        groupsAndEnterpriseBannerAssignment(cb) {
-          SplitTestHandler.getAssignment(
-            req,
-            res,
-            'groups-and-enterprise-banner',
-            (err, assignment) => {
-              if (err) {
-                logger.warn(
-                  { err },
-                  'failed to get "groups-and-enterprise-banner" split test assignment'
-                )
-
-                const defaultAssignment = { variant: 'default' }
-                cb(null, defaultAssignment)
-              } else {
-                cb(null, assignment)
-              }
-            }
-          )
-        },
-        survey(cb) {
-          SurveyHandler.getSurvey(userId, (err, survey) => {
-            if (err) {
-              logger.warn({ err }, 'failed to get survey')
-              // do not fail loading the project list if we fail to load the survey
-              cb(null, null)
-            } else {
-              cb(null, survey)
-            }
-          })
-        },
-      },
-      (err, results) => {
-        if (err != null) {
-          OError.tag(err, 'error getting data for project list page')
-          return next(err)
-        }
-        const {
-          notifications,
-          user,
-          userEmailsData,
-          groupsAndEnterpriseBannerAssignment,
-          userIsMemberOfGroupSubscription,
-        } = results
-
-        if (
-          user &&
-          UserPrimaryEmailCheckHandler.requiresPrimaryEmailCheck(user)
-        ) {
-          return res.redirect('/user/emails/primary-email-check')
-        }
-
-        const userEmails = userEmailsData.list || []
-
-        const userAffiliations = userEmails
-          .filter(emailData => !!emailData.affiliation)
-          .map(emailData => {
-            const result = emailData.affiliation
-            result.email = emailData.email
-            return result
-          })
-
-        const { allInReconfirmNotificationPeriods } = userEmailsData
-
-        // Handle case of deleted user
-        if (user == null) {
-          UserController.logout(req, res, next)
-          return
-        }
-        const tags = results.tags
-        const notificationsInstitution = []
-        for (const notification of notifications) {
-          notification.html = req.i18n.translate(
-            notification.templateKey,
-            notification.messageOpts
-          )
-        }
-
-        // Institution SSO Notifications
-        let reconfirmedViaSAML
-        if (Features.hasFeature('saml')) {
-          reconfirmedViaSAML = _.get(req.session, ['saml', 'reconfirmed'])
-          const samlSession = req.session.saml
-          // Notification: SSO Available
-          const linkedInstitutionIds = []
-          user.emails.forEach(email => {
-            if (email.samlProviderId) {
-              linkedInstitutionIds.push(email.samlProviderId)
-            }
-          })
-          if (Array.isArray(userAffiliations)) {
-            userAffiliations.forEach(affiliation => {
-              if (
-                _ssoAvailable(affiliation, req.session, linkedInstitutionIds)
-              ) {
-                notificationsInstitution.push({
-                  email: affiliation.email,
-                  institutionId: affiliation.institution.id,
-                  institutionName: affiliation.institution.name,
-                  templateKey: 'notification_institution_sso_available',
-                })
-              }
-            })
-          }
-
-          if (samlSession) {
-            // Notification: After SSO Linked
-            if (samlSession.linked) {
-              notificationsInstitution.push({
-                email: samlSession.institutionEmail,
-                institutionName: samlSession.linked.universityName,
-                templateKey: 'notification_institution_sso_linked',
-              })
-            }
-
-            // Notification: After SSO Linked or Logging in
-            // The requested email does not match primary email returned from
-            // the institution
-            if (
-              samlSession.requestedEmail &&
-              samlSession.emailNonCanonical &&
-              !samlSession.error
-            ) {
-              notificationsInstitution.push({
-                institutionEmail: samlSession.emailNonCanonical,
-                requestedEmail: samlSession.requestedEmail,
-                templateKey: 'notification_institution_sso_non_canonical',
-              })
-            }
-
-            // Notification: Tried to register, but account already existed
-            // registerIntercept is set before the institution callback.
-            // institutionEmail is set after institution callback.
-            // Check for both in case SSO flow was abandoned
-            if (
-              samlSession.registerIntercept &&
-              samlSession.institutionEmail &&
-              !samlSession.error
-            ) {
-              notificationsInstitution.push({
-                email: samlSession.institutionEmail,
-                templateKey: 'notification_institution_sso_already_registered',
-              })
-            }
-
-            // Notification: When there is a session error
-            if (samlSession.error) {
-              notificationsInstitution.push({
-                templateKey: 'notification_institution_sso_error',
-                error: samlSession.error,
-              })
-            }
-          }
-          delete req.session.saml
-        }
-
-        const portalTemplates =
-          ProjectController._buildPortalTemplatesList(userAffiliations)
-        const projects = ProjectController._buildProjectList(
-          results.projects,
-          userId
-        )
-
-        // in v2 add notifications for matching university IPs
-        if (Settings.overleaf != null && req.ip !== user.lastLoginIp) {
-          NotificationsBuilder.ipMatcherAffiliation(user._id).create(
-            req.ip,
-            () => {}
-          )
-        }
-
-        const hasPaidAffiliation = userAffiliations.some(
-          affiliation => affiliation.licence && affiliation.licence !== 'free'
-        )
-
-        // groupsAndEnterpriseBannerAssignment.variant = 'default' | 'empower' | 'save' | 'did-you-know'
-        const showGroupsAndEnterpriseBanner =
-          groupsAndEnterpriseBannerAssignment.variant !== 'default' &&
-          Features.hasFeature('saas') &&
-          !userIsMemberOfGroupSubscription &&
-          !hasPaidAffiliation
-
-        ProjectController._injectProjectUsers(projects, (error, projects) => {
-          if (error != null) {
-            return next(error)
-          }
-          const viewModel = {
-            title: 'your_projects',
-            priority_title: true,
-            projects,
-            tags,
-            notifications: notifications || [],
-            notificationsInstitution,
-            allInReconfirmNotificationPeriods,
-            portalTemplates,
-            user,
-            userAffiliations,
-            userEmails,
-            hasSubscription: results.hasSubscription,
-            reconfirmedViaSAML,
-            zipFileSizeLimit: Settings.maxUploadSize,
-            isOverleaf: !!Settings.overleaf,
-            metadata: { viewport: false },
-            showThinFooter: true, // don't show the fat footer on the projects dashboard, as there's a fixed space available
-            usersBestSubscription: results.usersBestSubscription,
-            survey: results.survey,
-            showGroupsAndEnterpriseBanner,
-            groupsAndEnterpriseBannerVariant:
-              groupsAndEnterpriseBannerAssignment.variant,
-          }
-
-          const paidUser =
-            (user.features != null ? user.features.github : undefined) &&
-            (user.features != null ? user.features.dropbox : undefined) // use a heuristic for paid account
-          const freeUserProportion = 0.1
-          const sampleFreeUser =
-            parseInt(user._id.toString().slice(-2), 16) <
-            freeUserProportion * 255
-          const showFrontWidget = paidUser || sampleFreeUser
-
-          if (showFrontWidget) {
-            viewModel.frontChatWidgetRoomId =
-              Settings.overleaf != null
-                ? Settings.overleaf.front_chat_widget_room_id
-                : undefined
-          }
-
-          // null test targeting logged in users
-          SplitTestHandler.promises.getAssignment(
-            req,
-            res,
-            'null-test-dashboard'
-          )
-
-          res.render('project/list', viewModel)
-          timer.done()
-        })
-      }
-    )
   },
 
   loadEditor(req, res, next) {
@@ -945,26 +558,65 @@ const ProjectController = {
             }
           )
         },
-        legacySourceEditorAssignment(cb) {
-          SplitTestHandler.getAssignment(
-            req,
-            res,
-            'source-editor-legacy',
-            (error, assignment) => {
-              // do not fail editor load if assignment fails
-              if (error) {
-                cb(null, { variant: 'default' })
-              } else {
-                cb(null, assignment)
-              }
+        participatingInVisualEditorNamingTest: [
+          'user',
+          (results, cb) => {
+            const isNewUser =
+              results.user.signUpDate >=
+              VISUAL_EDITOR_NAMING_SPLIT_TEST_MIN_SIGNUP_DATE
+            cb(null, isNewUser)
+          },
+        ],
+        visualEditorNameAssignment: [
+          'participatingInVisualEditorNamingTest',
+          (results, cb) => {
+            if (!results.participatingInVisualEditorNamingTest) {
+              cb(null, { variant: 'default' })
+            } else {
+              SplitTestHandler.getAssignment(
+                req,
+                res,
+                'visual-editor-name',
+                (error, assignment) => {
+                  if (error) {
+                    cb(null, { variant: 'default' })
+                  } else {
+                    cb(null, assignment)
+                  }
+                }
+              )
             }
-          )
-        },
+          },
+        ],
+        legacySourceEditorAssignment: [
+          'participatingInVisualEditorNamingTest',
+          'visualEditorNameAssignment',
+          (results, cb) => {
+            // Hide Ace for people in the Rich Text naming test
+            if (results.participatingInVisualEditorNamingTest) {
+              cb(null, { variant: 'true' })
+            } else {
+              SplitTestHandler.getAssignment(
+                req,
+                res,
+                'source-editor-legacy',
+                (error, assignment) => {
+                  // do not fail editor load if assignment fails
+                  if (error) {
+                    cb(null, { variant: 'default' })
+                  } else {
+                    cb(null, assignment)
+                  }
+                }
+              )
+            }
+          },
+        ],
         pdfjsAssignment(cb) {
           SplitTestHandler.getAssignment(
             req,
             res,
-            'pdfjs-31',
+            'pdfjs-36',
             {},
             (error, assignment) => {
               // do not fail editor load if assignment fails
@@ -1081,11 +733,58 @@ const ProjectController = {
             }
           )
         },
+        figureModalAssignment(cb) {
+          SplitTestHandler.getAssignment(req, res, 'figure-modal', () => {
+            // We'll pick up the assignment from the res.locals assignment.
+            cb()
+          })
+        },
+        onboardingVideoTourAssignment(cb) {
+          SplitTestHandler.getAssignment(
+            req,
+            res,
+            'onboarding-video-tour',
+            (error, assignment) => {
+              // do not fail editor load if assignment fails
+              if (error) {
+                cb(null, { variant: 'default' })
+              } else {
+                cb(null, assignment)
+              }
+            }
+          )
+        },
+        historyViewAssignment(cb) {
+          SplitTestHandler.getAssignment(
+            req,
+            res,
+            'history-view',
+            (error, assignment) => {
+              // do not fail editor load if assignment fails
+              if (error) {
+                cb(null, { variant: 'default' })
+              } else {
+                cb(null, assignment)
+              }
+            }
+          )
+        },
         accessCheckForOldCompileDomainAssigment(cb) {
           SplitTestHandler.getAssignment(
             req,
             res,
             'access-check-for-old-compile-domain',
+            () => {
+              // We'll pick up the assignment from the res.locals assignment.
+              cb()
+            }
+          )
+        },
+        forceNewDomainAssignment(cb) {
+          SplitTestHandler.getAssignment(
+            req,
+            res,
+            'force-new-compile-domain',
             () => {
               // We'll pick up the assignment from the res.locals assignment.
               cb()
@@ -1149,10 +848,14 @@ const ProjectController = {
           isTokenMember,
           isInvitedMember,
           brandVariation,
+          visualEditorNameAssignment,
+          participatingInVisualEditorNamingTest,
           legacySourceEditorAssignment,
           pdfjsAssignment,
           editorLeftMenuAssignment,
           richTextAssignment,
+          onboardingVideoTourAssignment,
+          historyViewAssignment,
         }
       ) => {
         if (err != null) {
@@ -1225,15 +928,23 @@ const ProjectController = {
               }
             }
 
+            const isAdminOrTemplateOwner =
+              hasAdminAccess(user) || Settings.templates?.user_id === userId
+            const showTemplatesServerPro =
+              Features.hasFeature('templates-server-pro') &&
+              isAdminOrTemplateOwner
+
             const debugPdfDetach = shouldDisplayFeature('debug_pdf_detach')
 
             const detachRole = req.params.detachRole
 
             const showLegacySourceEditor =
               !Features.hasFeature('saas') ||
-              legacySourceEditorAssignment.variant === 'default' ||
-              // Also allow override via legacy_source_editor=true in query string
-              shouldDisplayFeature('legacy_source_editor')
+              // Allow override via legacy_source_editor=true in query string
+              shouldDisplayFeature('legacy_source_editor') ||
+              // Hide Ace for beta users
+              (!user.betaProgram &&
+                legacySourceEditorAssignment.variant === 'default')
 
             const editorLeftMenuReact =
               editorLeftMenuAssignment?.variant === 'react'
@@ -1260,10 +971,32 @@ const ProjectController = {
               !userIsMemberOfGroupSubscription &&
               !userHasInstitutionLicence
 
+            const showOnboardingVideoTour =
+              Features.hasFeature('saas') &&
+              userId &&
+              onboardingVideoTourAssignment.variant === 'active' &&
+              req.session.justRegistered
+
+            const showPersonalAccessToken =
+              !Features.hasFeature('saas') ||
+              req.query?.personal_access_token === 'true'
+
             const template =
               detachRole === 'detached'
                 ? 'project/editor_detached'
                 : 'project/editor'
+
+            const isParticipatingInVisualEditorNamingTest =
+              Features.hasFeature('saas') &&
+              participatingInVisualEditorNamingTest
+
+            let richTextVariant
+            if (!Features.hasFeature('saas')) {
+              richTextVariant = 'cm6'
+            } else {
+              richTextVariant = richTextAssignment.variant
+            }
+
             res.render(template, {
               title: project.name,
               priority_title: true,
@@ -1324,8 +1057,11 @@ const ProjectController = {
               gitBridgePublicBaseUrl: Settings.gitBridgePublicBaseUrl,
               wsUrl,
               showSupport: Features.hasFeature('support'),
+              showTemplatesServerPro,
               pdfjsVariant: pdfjsAssignment.variant,
               debugPdfDetach,
+              isParticipatingInVisualEditorNamingTest,
+              visualEditorNameVariant: visualEditorNameAssignment.variant,
               showLegacySourceEditor,
               showSymbolPalette,
               galileoEnabled,
@@ -1337,7 +1073,10 @@ const ProjectController = {
               fixedSizeDocument: true,
               useOpenTelemetry: Settings.useOpenTelemetryClient,
               showCM6SwitchAwaySurvey: Settings.showCM6SwitchAwaySurvey,
-              richTextVariant: richTextAssignment.variant,
+              richTextVariant,
+              showOnboardingVideoTour,
+              historyViewReact: historyViewAssignment.variant === 'react',
+              showPersonalAccessToken,
             })
             timer.done()
           }
@@ -1394,7 +1133,7 @@ const ProjectController = {
             status: 'success',
           })
         }
-        return callback(null, user)
+        callback(null, user)
       }
     )
   },
@@ -1633,9 +1372,5 @@ const LEGACY_THEME_LIST = [
   'vibrant_ink',
   'xcode',
 ]
-
-ProjectController.projectListPage = expressify(
-  ProjectController.projectListPage
-)
 
 module.exports = ProjectController

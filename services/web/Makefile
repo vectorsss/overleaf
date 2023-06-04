@@ -146,9 +146,40 @@ test_frontend_ct:
 	COMPOSE_PROJECT_NAME=frontend_test_ct_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE) run --rm test_frontend_ct
 	COMPOSE_PROJECT_NAME=frontend_test_ct_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE) down -v -t 0
 
+# Note: The below cypress targets are for CI only
+build_test_frontend_ct:
+	COMPOSE_PROJECT_NAME=frontend_test_ct_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE) build test_frontend_ct
+	# Note: The 2nd build should use the cache from the 1st build.
+	COMPOSE_PROJECT_NAME=frontend_test_ct_editor_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE) build test_frontend_ct
+
+test_frontend_ct_core: export CYPRESS_RESULTS=./cypress/results/core
+test_frontend_ct_core: export CYPRESS_SPEC_PATTERN=./{test,modules/**/test}/frontend/**/*.spec.{js,ts,tsx}
+test_frontend_ct_core: export CYPRESS_EXCLUDE_SPEC_PATTERN=./test/frontend/features/source-editor/**/*.spec.{js,ts,tsx}
+test_frontend_ct_core:
+	COMPOSE_PROJECT_NAME=frontend_test_ct_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE) down -v -t 0
+	COMPOSE_PROJECT_NAME=frontend_test_ct_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE) run --rm test_frontend_ct
+	COMPOSE_PROJECT_NAME=frontend_test_ct_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE) down -v -t 0
+
+test_frontend_ct_editor: export CYPRESS_RESULTS=./cypress/results/editor
+test_frontend_ct_editor: export CYPRESS_SPEC_PATTERN=./test/frontend/features/source-editor/**/*.spec.{js,ts,tsx}
+test_frontend_ct_editor:
+	COMPOSE_PROJECT_NAME=frontend_test_ct_editor_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE) down -v -t 0
+	COMPOSE_PROJECT_NAME=frontend_test_ct_editor_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE) run --rm test_frontend_ct
+	COMPOSE_PROJECT_NAME=frontend_test_ct_editor_$(BUILD_DIR_NAME) $(DOCKER_COMPOSE) down -v -t 0
+
 #
 # Acceptance tests
 #
+
+# Keep in sync with TEST_ACCEPTANCE_MONGO_INIT in Makefile.module
+TEST_ACCEPTANCE_MONGO_INIT := \
+	$(DOCKER_COMPOSE) up -d mongo; \
+	$(DOCKER_COMPOSE) exec -T mongo sh -c ' \
+		while ! mongo --eval "db.version()" > /dev/null; do \
+			echo "Waiting for Mongo..."; \
+			sleep 1; \
+		done; \
+		mongo --eval "rs.initiate({ _id: \"overleaf\", members: [ { _id: 0, host: \"mongo:27017\" } ] })"'
 
 test_acceptance: test_acceptance_app test_acceptance_modules
 test_acceptance_saas: test_acceptance_app_saas test_acceptance_modules_merged_saas
@@ -170,6 +201,7 @@ test_acceptance_app_server_pro: export SHARELATEX_CONFIG=$(CFG_SERVER_PRO)
 
 $(TEST_ACCEPTANCE_APP):
 	$(DOCKER_COMPOSE) down -v -t 0
+	$(TEST_ACCEPTANCE_MONGO_INIT)
 	$(DOCKER_COMPOSE) run --rm test_acceptance
 	$(DOCKER_COMPOSE) down -v -t 0
 
@@ -318,6 +350,7 @@ TEST_ACCEPTANCE_MODULES_MERGED_VARIANTS = \
 
 $(TEST_ACCEPTANCE_MODULES_MERGED_VARIANTS):
 	$(DOCKER_COMPOSE) down -v -t 0
+	$(TEST_ACCEPTANCE_MONGO_INIT)
 	$(DOCKER_COMPOSE) run --rm test_acceptance make test_acceptance_modules_merged_inner
 	$(DOCKER_COMPOSE) down -v -t 0
 
@@ -340,6 +373,7 @@ $(TEST_ACCEPTANCE_MODULES_MERGED_SPLIT_SAAS): export BASE_CONFIG = $(CFG_SAAS)
 
 $(TEST_ACCEPTANCE_MODULES_MERGED_SPLIT_SAAS): test_acceptance_modules_merged_saas_%:
 	$(DOCKER_COMPOSE) down -v -t 0
+	$(TEST_ACCEPTANCE_MONGO_INIT)
 	$(DOCKER_COMPOSE) run --rm test_acceptance make test_acceptance_modules_merged_inner_$*
 	$(DOCKER_COMPOSE) down -v -t 0
 

@@ -7,18 +7,19 @@
 
 const BPromise = require('bluebird')
 const zlib = require('zlib')
-const stringToStream = require('string-to-stream')
-
-function promiseWriteStreamFinish(writeStream) {
-  return new BPromise(function (resolve, reject) {
-    writeStream.on('finish', resolve)
-    writeStream.on('error', reject)
-  })
-}
+const { WritableBuffer, ReadableString } = require('@overleaf/stream-utils')
+const { pipeline } = require('stream')
 
 function promisePipe(readStream, writeStream) {
-  readStream.pipe(writeStream)
-  return promiseWriteStreamFinish(writeStream)
+  return new BPromise(function (resolve, reject) {
+    pipeline(readStream, writeStream, function (err) {
+      if (err) {
+        reject(err)
+      } else {
+        resolve()
+      }
+    })
+  })
 }
 
 /**
@@ -34,20 +35,14 @@ exports.promisePipe = promisePipe
 
 function readStreamToBuffer(readStream) {
   return new BPromise(function (resolve, reject) {
-    const buffers = []
-    readStream.on('readable', function () {
-      while (true) {
-        const buffer = this.read()
-        if (!buffer) {
-          break
-        }
-        buffers.push(buffer)
+    const bufferStream = new WritableBuffer()
+    pipeline(readStream, bufferStream, function (err) {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(bufferStream.contents())
       }
     })
-    readStream.on('end', function () {
-      resolve(Buffer.concat(buffers))
-    })
-    readStream.on('error', reject)
   })
 }
 
@@ -62,17 +57,15 @@ exports.readStreamToBuffer = readStreamToBuffer
 
 function gunzipStreamToBuffer(readStream) {
   const gunzip = zlib.createGunzip()
-  const gunzipStream = readStream.pipe(gunzip)
+  const bufferStream = new WritableBuffer()
   return new BPromise(function (resolve, reject) {
-    const buffers = []
-    gunzipStream.on('data', function (buffer) {
-      buffers.push(buffer)
+    pipeline(readStream, gunzip, bufferStream, function (err) {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(bufferStream.contents())
+      }
     })
-    gunzipStream.on('end', function () {
-      resolve(Buffer.concat(buffers))
-    })
-    readStream.on('error', reject)
-    gunzipStream.on('error', reject)
   })
 }
 
@@ -87,7 +80,7 @@ exports.gunzipStreamToBuffer = gunzipStreamToBuffer
 
 function gzipStringToStream(string) {
   const gzip = zlib.createGzip()
-  return stringToStream(string).pipe(gzip)
+  return new ReadableString(string).pipe(gzip)
 }
 
 /**
