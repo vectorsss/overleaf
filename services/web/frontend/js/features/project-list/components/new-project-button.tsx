@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { type JSXElementConstructor, useCallback, useState } from 'react'
 import { Dropdown, MenuItem } from 'react-bootstrap'
 import { useTranslation } from 'react-i18next'
 import { ExposedSettings } from '../../../../../types/exposed-settings'
@@ -11,6 +11,7 @@ import NewProjectButtonModal, {
 import AddAffiliation, { useAddAffiliation } from './add-affiliation'
 import { Nullable } from '../../../../../types/utils'
 import { sendMB } from '../../../infrastructure/event-tracking'
+import importOverleafModules from '../../../../macros/import-overleaf-module.macro'
 
 type SendTrackingEvent = {
   dropdownMenu: string
@@ -19,7 +20,7 @@ type SendTrackingEvent = {
 }
 
 type Segmentation = SendTrackingEvent & {
-  'project-dashboard-react': 'enabled'
+  'welcome-page-redesign': 'default'
 }
 
 type ModalMenuClickOptions = {
@@ -59,7 +60,7 @@ function NewProjectButton({
     }: SendTrackingEvent) => {
       if (trackingKey) {
         let segmentation: Segmentation = {
-          'project-dashboard-react': 'enabled',
+          'welcome-page-redesign': 'default',
           dropdownMenu,
           dropdownOpen,
         }
@@ -138,6 +139,14 @@ function NewProjectButton({
     [sendTrackingEvent]
   )
 
+  const [importProjectFromGithubMenu] = importOverleafModules(
+    'importProjectFromGithubMenu'
+  )
+
+  const ImportProjectFromGithubMenu: JSXElementConstructor<{
+    onClick: (e: React.MouseEvent<Record<string, unknown>>) => void
+  }> = importProjectFromGithubMenu?.import.default
+
   return (
     <>
       <ControlledDropdown
@@ -183,16 +192,16 @@ function NewProjectButton({
           >
             {t('upload_project')}
           </MenuItem>
-          <MenuItem
-            onClick={e =>
-              handleModalMenuClick(e, {
-                modalVariant: 'import_from_github',
-                dropdownMenuEvent: 'import-from-github',
-              })
-            }
-          >
-            {t('import_from_github')}
-          </MenuItem>
+          {ImportProjectFromGithubMenu && (
+            <ImportProjectFromGithubMenu
+              onClick={e =>
+                handleModalMenuClick(e, {
+                  modalVariant: 'import_from_github',
+                  dropdownMenuEvent: 'import-from-github',
+                })
+              }
+            />
+          )}
           {portalTemplates?.length > 0 ? (
             <>
               <MenuItem divider />
@@ -212,9 +221,14 @@ function NewProjectButton({
               ))}
             </>
           ) : null}
-          <MenuItem divider />
-          <MenuItem header>{t('templates')}</MenuItem>
-          {templateLinks.map((templateLink, index) => (
+
+          {templateLinks && templateLinks.length > 0 && (
+            <>
+              <MenuItem divider />
+              <MenuItem header>{t('templates')}</MenuItem>
+            </>
+          )}
+          {templateLinks?.map((templateLink, index) => (
             <MenuItem
               key={`new-project-button-template-${index}`}
               href={templateLink.url}

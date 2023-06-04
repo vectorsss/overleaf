@@ -1,6 +1,3 @@
-/* eslint-disable
-    camelcase,
-*/
 // TODO: This file was created by bulk-decaffeinate.
 // Fix any style issues and re-enable lint.
 /*
@@ -18,47 +15,28 @@ import * as RedisManager from './RedisManager.js'
 import * as UpdatesProcessor from './UpdatesProcessor.js'
 import * as ErrorRecorder from './ErrorRecorder.js'
 
-export function flushIfOld(project_id, cutoffTime, callback) {
+export function flushIfOld(projectId, cutoffTime, callback) {
   if (callback == null) {
     callback = function () {}
   }
   return RedisManager.getFirstOpTimestamp(
-    project_id,
+    projectId,
     function (err, firstOpTimestamp) {
       if (err != null) {
         return callback(OError.tag(err))
       }
-      // in the normal case, the flush marker will be set with the
-      // timestamp of the oldest operation in the queue by docupdater
-      if (firstOpTimestamp != null) {
-        if (firstOpTimestamp < cutoffTime) {
-          logger.debug(
-            { project_id, firstOpTimestamp, cutoffTime },
-            'flushing old project'
-          )
-          return UpdatesProcessor.processUpdatesForProject(
-            project_id,
-            (
-              err // always clear the flush marker after processing the project
-            ) =>
-              RedisManager.clearFirstOpTimestamp(project_id, function (e) {
-                if (e != null) {
-                  logger.error(
-                    { project_id, flushErr: e },
-                    'failed to clear flush marker'
-                  )
-                }
-                if (err) {
-                  OError.tag(err)
-                }
-                return callback(err)
-              })
-          ) // return the original error from processUpdatesFromProject
-        } else {
-          return callback()
-        }
+      // In the normal case, the flush marker will be set with the
+      // timestamp of the oldest operation in the queue by docupdater.
+      // If the marker is not set for any reason, we flush it anyway
+      // for safety.
+      if (!firstOpTimestamp || firstOpTimestamp < cutoffTime) {
+        logger.debug(
+          { projectId, firstOpTimestamp, cutoffTime },
+          'flushing old project'
+        )
+        return UpdatesProcessor.processUpdatesForProject(projectId, callback)
       } else {
-        return RedisManager.setFirstOpTimestamp(project_id, callback)
+        return callback()
       }
     }
   )
@@ -100,7 +78,7 @@ export function flushOldOps(options, callback) {
         const startTime = new Date()
         let count = 0
         const jobs = projectIds.map(
-          project_id =>
+          projectId =>
             function (cb) {
               const timeTaken = new Date() - startTime
               count++
@@ -120,14 +98,14 @@ export function flushOldOps(options, callback) {
                 logger.debug({ count }, 'background retries hit limit')
                 return cb(new OError('hit limit'))
               }
-              if (failedProjects.has(project_id)) {
+              if (failedProjects.has(projectId)) {
                 // skip failed projects
                 return setTimeout(cb, options.queueDelay || 100) // pause between flushes
               }
-              return flushIfOld(project_id, cutoffTime, function (err) {
+              return flushIfOld(projectId, cutoffTime, function (err) {
                 if (err != null) {
                   logger.warn(
-                    { project_id, flushErr: err },
+                    { projectId, flushErr: err },
                     'error flushing old project'
                   )
                 }

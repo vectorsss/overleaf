@@ -148,6 +148,7 @@ public class GitBridgeServer {
         HandlerCollection handlers = new HandlerList();
         handlers.addHandler(initResourceHandler());
         handlers.addHandler(new PostbackHandler(bridge));
+        handlers.addHandler(new ProjectDeletionHandler(bridge));
         handlers.addHandler(new DefaultHandler());
 
         api.setHandler(handlers);
@@ -165,7 +166,11 @@ public class GitBridgeServer {
         final ServletContextHandler servletContextHandler =
                 new ServletContextHandler(ServletContextHandler.SESSIONS);
         if (config.isUsingOauth2()) {
-            Filter filter = new Oauth2Filter(snapshotApi, config.getOauth2());
+            Filter filter = new Oauth2Filter(
+                    snapshotApi,
+                    config.getOauth2(),
+                    config.isUserPasswordEnabled()
+            );
             servletContextHandler.addFilter(
                     new FilterHolder(filter),
                     "/*",

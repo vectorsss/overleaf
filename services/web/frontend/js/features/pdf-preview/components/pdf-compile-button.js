@@ -45,6 +45,7 @@ function PdfCompileButton() {
 
   const buttonClassName = classNames({
     'btn-striped-animated': hasChanges,
+    'no-left-radius': true,
   })
 
   return (
@@ -55,7 +56,7 @@ function PdfCompileButton() {
       button={{
         tooltip: {
           description: tooltipElement,
-          id: 'logs-toggle',
+          id: 'compile',
           tooltipProps: { className: 'keyboard-tooltip' },
           overlayProps: { delayShow: 500 },
         },

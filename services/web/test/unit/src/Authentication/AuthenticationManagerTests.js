@@ -17,7 +17,7 @@ describe('AuthenticationManager', function () {
       requires: {
         '../../models/User': {
           User: (this.User = {
-            updateOne: sinon.stub().callsArgWith(3, null, { nModified: 1 }),
+            updateOne: sinon.stub().callsArgWith(3, null, { modifiedCount: 1 }),
           }),
         },
         '../../infrastructure/mongodb': {
@@ -99,7 +99,7 @@ describe('AuthenticationManager', function () {
         })
 
         it('should return the user', function () {
-          this.callback.calledWith(null, this.user).should.equal(true)
+          this.callback.should.have.been.calledWith(null, this.user)
         })
 
         it('should send metrics', function () {
@@ -147,7 +147,7 @@ describe('AuthenticationManager', function () {
         beforeEach(function () {
           this.User.updateOne = sinon
             .stub()
-            .callsArgWith(3, null, { nModified: 0 })
+            .callsArgWith(3, null, { modifiedCount: 0 })
         })
 
         describe('correct password', function () {
@@ -171,7 +171,9 @@ describe('AuthenticationManager', function () {
 
         describe('bad password', function () {
           beforeEach(function (done) {
-            this.User.updateOne = sinon.stub().yields(null, { nModified: 0 })
+            this.User.updateOne = sinon
+              .stub()
+              .yields(null, { modifiedCount: 0 })
             this.AuthenticationManager.authenticate(
               { email: this.email },
               'notthecorrectpassword',
@@ -689,7 +691,7 @@ describe('AuthenticationManager', function () {
     })
 
     it('should return an error when the password is too similar to email', function () {
-      const password = 'someuser1234'
+      const password = '12someuser34'
       const email = 'someuser@example.com'
       const error = this.AuthenticationManager._validatePasswordNotTooSimilar(
         password,
@@ -699,28 +701,25 @@ describe('AuthenticationManager', function () {
     })
 
     it('should return an error when the password is re-arranged elements of the email', function () {
-      const password = 'su2oe1em3re'
-      const email = 'someuser@example.com'
-      const error = this.AuthenticationManager._validatePasswordNotTooSimilar(
-        password,
-        email
-      )
-      expect(error).to.exist
-    })
-
-    it('should send a metric with a rounded similarity score when password is too similar to email', function () {
-      const password = 'su2oe1em3re'
-      const email = 'someuser@example.com'
-      const error = this.AuthenticationManager._validatePasswordNotTooSimilar(
-        password,
-        email
-      )
-      expect(
-        this.metrics.inc.calledWith('password-validation-similarity', 1, {
-          similarity: 0.7,
-        })
-      ).to.equal(true)
-      expect(error).to.exist
+      const badPasswords = [
+        'su2oe1em3oolc',
+        'someone.cool',
+        'someonecool',
+        'cool.someone',
+        'coolsomeone',
+        'example.com',
+        'examplecom',
+        'com.example',
+        'comexample',
+      ]
+      const email = 'someone.cool@example.com'
+      for (const password of badPasswords) {
+        const error = this.AuthenticationManager._validatePasswordNotTooSimilar(
+          password,
+          email
+        )
+        expect(error).to.exist
+      }
     })
 
     it('should return nothing when the password different from email', function () {
@@ -850,6 +849,23 @@ describe('AuthenticationManager', function () {
       })
     })
 
+    describe('email contains password', function () {
+      let user, password
+      beforeEach(function () {
+        password = 'somedomain'
+        user = { _id: 'some-user-id', email: 'someuser@somedomain.com' }
+      })
+
+      it('should reject the password', function (done) {
+        this.AuthenticationManager.setUserPassword(user, password, err => {
+          expect(err).to.exist
+          expect(err.name).to.equal('InvalidPasswordError')
+          expect(err?.info?.code).to.equal('contains_email')
+          done()
+        })
+      })
+    })
+
     describe('too short', function () {
       beforeEach(function () {
         this.settings.passwordStrengthOptions = {
@@ -888,16 +904,17 @@ describe('AuthenticationManager', function () {
     describe('password too similar to email', function () {
       beforeEach(function () {
         this.user.email = 'foobarbazquux@example.com'
-        this.password = 'foobarbaz'
+        this.password = 'foo21barbaz'
         this.metrics.inc.reset()
       })
 
-      it('should send a metric when the password is too similar to the email', function (done) {
+      it('should produce an error when the password is too similar to the email', function (done) {
         this.AuthenticationManager.setUserPassword(
           this.user,
           this.password,
           err => {
-            expect(err).to.not.exist
+            expect(err).to.exist
+            expect(err?.info?.code).to.equal('too_similar')
             expect(
               this.metrics.inc.calledWith('password-too-similar-to-email')
             ).to.equal(true)
@@ -906,12 +923,13 @@ describe('AuthenticationManager', function () {
         )
       })
 
-      it('should send a metric when the password is too similar to the email, regardless of case', function (done) {
+      it('should produce an error when the password is too similar to the email, regardless of case', function (done) {
         this.AuthenticationManager.setUserPassword(
           this.user,
           this.password.toUpperCase(),
           err => {
-            expect(err).to.not.exist
+            expect(err).to.exist
+            expect(err?.info?.code).to.equal('too_similar')
             expect(
               this.metrics.inc.calledWith('password-too-similar-to-email')
             ).to.equal(true)
@@ -960,6 +978,7 @@ describe('AuthenticationManager', function () {
 
       it('should call the callback', function () {
         this.callback.called.should.equal(true)
+        expect(this.callback.lastCall.args[0]).to.not.be.instanceOf(Error)
       })
     })
   })

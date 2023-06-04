@@ -2,6 +2,7 @@ import {
   ProjectListProvider,
   useProjectListContext,
 } from '../context/project-list-context'
+import { ColorPickerProvider } from '../context/color-picker-context'
 import * as eventTracking from '../../../infrastructure/event-tracking'
 import { Col, Row } from 'react-bootstrap'
 import { useTranslation } from 'react-i18next'
@@ -18,16 +19,21 @@ import SearchForm from './search-form'
 import ProjectsDropdown from './dropdown/projects-dropdown'
 import SortByDropdown from './dropdown/sort-by-dropdown'
 import ProjectTools from './table/project-tools/project-tools'
+import ProjectListTitle from './title/project-list-title'
 import Sidebar from './sidebar/sidebar'
 import LoadMore from './load-more'
 import { useEffect } from 'react'
+import getMeta from '../../../utils/meta'
+import WelcomeMessageNew from './welcome-message-new'
 
 function ProjectListRoot() {
   const { isReady } = useWaitForI18n()
 
   return isReady ? (
     <ProjectListProvider>
-      <ProjectListPageContent />
+      <ColorPickerProvider>
+        <ProjectListPageContent />
+      </ColorPickerProvider>
     </ProjectListProvider>
   ) : null
 }
@@ -41,7 +47,15 @@ function ProjectListPageContent() {
     searchText,
     setSearchText,
     selectedProjects,
+    filter,
+    tags,
+    selectedTagId,
   } = useProjectListContext()
+
+  const selectedTag = tags.find(tag => tag._id === selectedTagId)
+  const welcomePageRedesignVariant = getMeta(
+    'ol-welcomePageRedesignVariant'
+  ) as 'enabled' | 'default'
 
   useEffect(() => {
     eventTracking.sendMB('loads_v2_dash', {})
@@ -65,26 +79,33 @@ function ProjectListPageContent() {
                   <UserNotifications />
                 </Col>
               </Row>
-              <Row>
-                <Col md={7} className="hidden-xs">
+              <div className="project-list-header-row">
+                <ProjectListTitle
+                  filter={filter}
+                  selectedTag={selectedTag}
+                  className="hidden-xs text-truncate"
+                />
+                <div className="project-tools">
+                  <div className="hidden-xs">
+                    {selectedProjects.length === 0 ? (
+                      <CurrentPlanWidget />
+                    ) : (
+                      <ProjectTools />
+                    )}
+                  </div>
+                  <div className="visible-xs">
+                    <CurrentPlanWidget />
+                  </div>
+                </div>
+              </div>
+              <Row className="hidden-xs">
+                <Col md={7}>
                   <SearchForm
                     inputValue={searchText}
                     setInputValue={setSearchText}
+                    filter={filter}
+                    selectedTag={selectedTag}
                   />
-                </Col>
-                <Col md={5}>
-                  <div className="project-tools">
-                    <div className="hidden-xs">
-                      {selectedProjects.length === 0 ? (
-                        <CurrentPlanWidget />
-                      ) : (
-                        <ProjectTools />
-                      )}
-                    </div>
-                    <div className="visible-xs">
-                      <CurrentPlanWidget />
-                    </div>
-                  </div>
                 </Col>
               </Row>
               <div className="project-list-sidebar-survey-wrapper visible-xs">
@@ -109,6 +130,8 @@ function ProjectListPageContent() {
                         <SearchForm
                           inputValue={searchText}
                           setInputValue={setSearchText}
+                          filter={filter}
+                          selectedTag={selectedTag}
                           className="overflow-hidden"
                           formGroupProps={{ className: 'mb-0' }}
                         />
@@ -141,7 +164,11 @@ function ProjectListPageContent() {
                     <UserNotifications />
                   </Col>
                 </Row>
-                <WelcomeMessage />
+                {welcomePageRedesignVariant === 'enabled' ? (
+                  <WelcomeMessageNew />
+                ) : (
+                  <WelcomeMessage />
+                )}
               </Col>
             </Row>
           </div>

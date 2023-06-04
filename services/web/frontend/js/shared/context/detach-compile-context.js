@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react'
+import { createContext, useContext, useEffect, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import {
   useLocalCompileContext,
@@ -7,6 +7,7 @@ import {
 import useDetachStateWatcher from '../hooks/use-detach-state-watcher'
 import useDetachAction from '../hooks/use-detach-action'
 import useCompileTriggers from '../../features/pdf-preview/hooks/use-compile-triggers'
+import getMeta from '../../utils/meta'
 
 export const DetachCompileContext = createContext()
 
@@ -29,8 +30,10 @@ export function DetachCompileProvider({ children }) {
     compiling: _compiling,
     deliveryLatencies: _deliveryLatencies,
     draft: _draft,
+    editedSinceCompileStarted: _editedSinceCompileStarted,
     error: _error,
     fileList: _fileList,
+    forceNewDomainVariant: _forceNewDomainVariant,
     hasChanges: _hasChanges,
     highlights: _highlights,
     lastCompileOptions: _lastCompileOptions,
@@ -67,7 +70,9 @@ export function DetachCompileProvider({ children }) {
     startCompile: _startCompile,
     stopCompile: _stopCompile,
     setChangedAt: _setChangedAt,
+    setSavedAt: _setSavedAt,
     clearCache: _clearCache,
+    syncToEntry: _syncToEntry,
   } = localCompileContext
 
   const [animateCompileDropdownArrow] = useDetachStateWatcher(
@@ -117,6 +122,12 @@ export function DetachCompileProvider({ children }) {
   const [fileList] = useDetachStateWatcher(
     'fileList',
     _fileList,
+    'detacher',
+    'detached'
+  )
+  const [forceNewDomainVariant] = useDetachStateWatcher(
+    'forceNewDomainVariant',
+    _forceNewDomainVariant,
     'detacher',
     'detached'
   )
@@ -213,6 +224,12 @@ export function DetachCompileProvider({ children }) {
   const [uncompiled] = useDetachStateWatcher(
     'uncompiled',
     _uncompiled,
+    'detacher',
+    'detached'
+  )
+  const [editedSinceCompileStarted] = useDetachStateWatcher(
+    'editedSinceCompileStarted',
+    _editedSinceCompileStarted,
     'detacher',
     'detached'
   )
@@ -337,6 +354,12 @@ export function DetachCompileProvider({ children }) {
     'detached',
     'detacher'
   )
+  const setSavedAt = useDetachAction(
+    'setSavedAt',
+    _setSavedAt,
+    'detached',
+    'detacher'
+  )
   const clearCache = useDetachAction(
     'clearCache',
     _clearCache,
@@ -344,7 +367,19 @@ export function DetachCompileProvider({ children }) {
     'detacher'
   )
 
-  useCompileTriggers(startCompile, setChangedAt)
+  const syncToEntry = useDetachAction(
+    'sync-to-entry',
+    _syncToEntry,
+    'detached',
+    'detacher'
+  )
+
+  useCompileTriggers(startCompile, setChangedAt, setSavedAt)
+  useEffect(() => {
+    // Sync the split test variant across the editor and pdf-detach.
+    const variants = getMeta('ol-splitTestVariants') || {}
+    variants['force-new-compile-domain'] = forceNewDomainVariant
+  }, [forceNewDomainVariant])
 
   const value = useMemo(
     () => ({
@@ -357,8 +392,10 @@ export function DetachCompileProvider({ children }) {
       compiling,
       deliveryLatencies,
       draft,
+      editedSinceCompileStarted,
       error,
       fileList,
+      forceNewDomainVariant,
       hasChanges,
       highlights,
       lastCompileOptions,
@@ -397,6 +434,7 @@ export function DetachCompileProvider({ children }) {
       firstRenderDone,
       setChangedAt,
       cleanupCompileResult,
+      syncToEntry,
     }),
     [
       animateCompileDropdownArrow,
@@ -409,7 +447,9 @@ export function DetachCompileProvider({ children }) {
       deliveryLatencies,
       draft,
       error,
+      editedSinceCompileStarted,
       fileList,
+      forceNewDomainVariant,
       hasChanges,
       highlights,
       lastCompileOptions,
@@ -446,6 +486,7 @@ export function DetachCompileProvider({ children }) {
       firstRenderDone,
       setChangedAt,
       cleanupCompileResult,
+      syncToEntry,
     ]
   )
 

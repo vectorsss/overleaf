@@ -42,10 +42,12 @@ describe('Filestore', function () {
   async function expectNoSockets() {
     try {
       await msleep(1000)
-      const { stdout } = await exec('ss -tnH')
+      const { stdout } = await exec('ss -tn')
+      const lines = stdout.split('\n')
+      const header = lines.shift()
 
       const badSockets = []
-      for (const socket of stdout.split('\n')) {
+      for (const socket of lines) {
         const fields = socket.split(' ').filter(part => part !== '')
         if (
           fields.length > 2 &&
@@ -62,6 +64,7 @@ describe('Filestore', function () {
         console.error(
           'ERR: Sockets still have receive buffer after connection closed'
         )
+        console.error(header)
         for (const socket of badSockets) {
           // eslint-disable-next-line no-console
           console.error(socket)
@@ -134,13 +137,6 @@ describe('Filestore', function () {
         expect(body).to.contain('up')
       })
 
-      it('should send a 200 for the health-check endpoint', async function () {
-        const response = await fetch(`${filestoreUrl}/health_check`)
-        expect(response.status).to.equal(200)
-        const body = await response.text()
-        expect(body).to.equal('OK')
-      })
-
       describe('with a file on the server', function () {
         let fileId, fileUrl, constantFileContent
 
@@ -193,6 +189,17 @@ describe('Filestore', function () {
           const res = await fetch(fileUrl)
           const body = await res.text()
           expect(body).to.equal(constantFileContent)
+        })
+
+        it('should send a 200 for the health-check endpoint using the file', async function () {
+          Settings.health_check = {
+            project_id: projectId,
+            file_id: fileId,
+          }
+          const response = await fetch(`${filestoreUrl}/health_check`)
+          expect(response.status).to.equal(200)
+          const body = await response.text()
+          expect(body).to.equal('OK')
         })
 
         it('should not leak a socket', async function () {
@@ -896,6 +903,14 @@ describe('Filestore', function () {
           it('should not time out', async function () {
             const response = await fetch(previewFileUrl)
             expect(response.status).to.equal(200)
+          })
+
+          it('should not leak sockets', async function () {
+            const response1 = await fetch(previewFileUrl)
+            expect(response1.status).to.equal(200)
+            const response2 = await fetch(previewFileUrl)
+            expect(response2.status).to.equal(200)
+            await expectNoSockets()
           })
 
           it("should respond with only an 'OK'", async function () {

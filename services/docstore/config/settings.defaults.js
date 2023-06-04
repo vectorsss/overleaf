@@ -16,7 +16,7 @@ const Settings = {
     keepSoftDeletedDocsArchived:
       process.env.KEEP_SOFT_DELETED_DOCS_ARCHIVED === 'true',
 
-    backend: process.env.BACKEND || 's3',
+    backend: process.env.BACKEND,
     healthCheck: {
       project_id: process.env.HEALTH_CHECK_PROJECT_ID,
     },
@@ -67,7 +67,6 @@ if (
 if (process.env.GCS_API_ENDPOINT) {
   Settings.docstore.gcs.endpoint = {
     apiEndpoint: process.env.GCS_API_ENDPOINT,
-    apiScheme: process.env.GCS_API_SCHEME,
     projectId: process.env.GCS_PROJECT_ID,
   }
 }

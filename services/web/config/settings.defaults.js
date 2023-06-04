@@ -88,9 +88,7 @@ module.exports = {
   mongo: {
     options: {
       appname: 'web',
-      useUnifiedTopology:
-        (process.env.MONGO_USE_UNIFIED_TOPOLOGY || 'true') === 'true',
-      poolSize: parseInt(process.env.MONGO_POOL_SIZE, 10) || 10,
+      maxPoolSize: parseInt(process.env.MONGO_POOL_SIZE, 10) || 100,
       serverSelectionTimeoutMS:
         parseInt(process.env.MONGO_SERVER_SELECTION_TIMEOUT, 10) || 60000,
       socketTimeoutMS: parseInt(process.env.MONGO_SOCKET_TIMEOUT, 10) || 60000,
@@ -99,6 +97,7 @@ module.exports = {
       process.env.MONGO_CONNECTION_STRING ||
       process.env.MONGO_URL ||
       `mongodb://${process.env.MONGO_HOST || '127.0.0.1'}/sharelatex`,
+    hasSecondaries: process.env.MONGO_HAS_SECONDARIES === 'true',
   },
 
   redis: {
@@ -206,6 +205,12 @@ module.exports = {
       backendGroupName: undefined,
       defaultBackendClass: process.env.CLSI_DEFAULT_BACKEND_CLASS || 'e2',
     },
+    project_history: {
+      sendProjectStructureOps: true,
+      initializeHistoryForNewProjects: true,
+      displayHistoryForNewProjects: true,
+      url: `http://${process.env.PROJECT_HISTORY_HOST || 'localhost'}:3054`,
+    },
     realTime: {
       url: `http://${process.env.REALTIME_HOST || 'localhost'}:3026`,
     },
@@ -229,6 +234,11 @@ module.exports = {
     // For legacy reasons, we need to populate the below objects.
     v1: {},
     recurly: {},
+  },
+
+  jwt: {
+    key: process.env.OT_JWT_AUTH_KEY,
+    algorithm: process.env.OT_JWT_AUTH_ALG || 'HS256',
   },
 
   splitTests: [],
@@ -676,16 +686,22 @@ module.exports = {
     enabled: false,
   },
 
-  compileBodySizeLimitMb: process.env.COMPILE_BODY_SIZE_LIMIT_MB || 5,
+  compileBodySizeLimitMb: process.env.COMPILE_BODY_SIZE_LIMIT_MB || 7,
 
   textExtensions: defaultTextExtensions.concat(
     parseTextExtensions(process.env.ADDITIONAL_TEXT_EXTENSIONS)
   ),
 
+  fileIgnorePattern:
+    process.env.FILE_IGNORE_PATTERN ||
+    '**/{{__MACOSX,.git,.texpadtmp,.R}{,/**},.!(latexmkrc),*.{dvi,aux,log,toc,out,pdfsync,synctex,synctex(busy),fdb_latexmk,fls,nlo,ind,glo,gls,glg,bbl,blg,doc,docx,gz,swp}}',
+
   validRootDocExtensions: ['tex', 'Rtex', 'ltx'],
 
   emailConfirmationDisabled:
     process.env.EMAIL_CONFIRMATION_DISABLED === 'true' || false,
+
+  emailAddressLimit: intFromEnv('EMAIL_ADDRESS_LIMIT', 10),
 
   enabledServices: (process.env.ENABLED_SERVICES || 'web,api')
     .split(',')
@@ -805,7 +821,10 @@ module.exports = {
     integrationLinkingWidgets: [],
     referenceLinkingWidgets: [],
     importProjectFromGithubModalWrapper: [],
+    importProjectFromGithubMenu: [],
     editorLeftMenuSync: [],
+    editorLeftMenuManageTemplate: [],
+    oauth2Server: [],
   },
 
   moduleImportSequence: [
@@ -820,7 +839,7 @@ module.exports = {
     reportOnly: process.env.CSP_REPORT_ONLY === 'true',
     reportPercentage: parseFloat(process.env.CSP_REPORT_PERCENTAGE) || 0,
     reportUri: process.env.CSP_REPORT_URI,
-    exclude: ['app/views/project/editor', 'app/views/project/list'],
+    exclude: ['app/views/project/editor', 'app/views/project/list-react'],
   },
 
   unsupportedBrowsers: {

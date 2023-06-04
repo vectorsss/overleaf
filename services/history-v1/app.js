@@ -26,8 +26,10 @@ const app = express()
 module.exports = app
 
 logger.initialize('history-v1')
+Metrics.open_sockets.monitor()
 Metrics.injectMetricsRoute(app)
 app.use(Metrics.http.monitor(logger))
+Metrics.leaked_sockets.monitor(logger)
 
 // We may have fairly large JSON bodies when receiving large Changes. Clients
 // may have to handle 413 status codes and try creating files instead of sending

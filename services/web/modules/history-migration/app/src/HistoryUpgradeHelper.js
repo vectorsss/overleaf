@@ -1,5 +1,8 @@
-const { ReadPreference, ObjectId } = require('mongodb')
-const { db } = require('../../../../app/src/infrastructure/mongodb')
+const { ObjectId } = require('mongodb')
+const {
+  db,
+  READ_PREFERENCE_SECONDARY,
+} = require('../../../../app/src/infrastructure/mongodb')
 const Settings = require('@overleaf/settings')
 
 const ProjectHistoryHandler = require('../../../../app/src/Features/Project/ProjectHistoryHandler')
@@ -106,6 +109,20 @@ async function upgradeProject(project, options) {
   const upgradeFn = getUpgradeFunctionForType(historyType)
   if (!upgradeFn) {
     return { error: 'unsupported history type' }
+  }
+  if (options.forceClean) {
+    try {
+      const projectId = project._id
+      // delete any existing history stored in the mongo backend
+      await HistoryManager.promises.deleteProject(projectId, projectId)
+      // unset overleaf.history.id to prevent the migration script from failing on checks
+      await db.projects.updateOne(
+        { _id: projectId },
+        { $unset: { 'overleaf.history.id': '' } }
+      )
+    } catch (err) {
+      // failed to delete existing history, but we can try to continue
+    }
   }
   const result = await upgradeFn(project, options)
   result.historyType = historyType
@@ -302,7 +319,7 @@ async function shouldPreserveHistory(project) {
         { preserveHistory: { $eq: true } },
       ],
     },
-    { readPreference: ReadPreference.SECONDARY }
+    { readPreference: READ_PREFERENCE_SECONDARY }
   )
 }
 
@@ -311,7 +328,7 @@ async function anyDocHistoryExists(project) {
     { project_id: { $eq: project._id } },
     {
       projection: { _id: 1 },
-      readPreference: ReadPreference.SECONDARY,
+      readPreference: READ_PREFERENCE_SECONDARY,
     }
   )
 }
@@ -321,7 +338,7 @@ async function anyDocHistoryIndexExists(project) {
     { project_id: { $eq: project._id } },
     {
       projection: { _id: 1 },
-      readPreference: ReadPreference.SECONDARY,
+      readPreference: READ_PREFERENCE_SECONDARY,
     }
   )
 }

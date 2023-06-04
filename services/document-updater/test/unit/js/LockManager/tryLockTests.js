@@ -1,5 +1,4 @@
 /* eslint-disable
-    camelcase,
     no-return-assign,
     no-unused-vars,
 */
@@ -29,13 +28,13 @@ describe('LockManager - trying the lock', function () {
             }
           },
         },
-        './Metrics': { inc() {} },
+        '@overleaf/metrics': { inc() {} },
         '@overleaf/settings': {
           redis: {
             lock: {
               key_schema: {
-                blockingKey({ doc_id }) {
-                  return `Blocking:${doc_id}`
+                blockingKey({ doc_id: docId }) {
+                  return `Blocking:${docId}`
                 },
               },
             },

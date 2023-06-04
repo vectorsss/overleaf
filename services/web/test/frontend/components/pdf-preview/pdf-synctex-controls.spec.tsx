@@ -76,63 +76,11 @@ const WithSelectedEntities = ({
   return null
 }
 
-const interceptSyncCodeAsync = () => {
-  const output: { resolve: () => void } = {
-    resolve: () => {
-      // do nothing
-    },
-  }
-
-  cy.intercept('/project/*/sync/code?*', req => {
-    return new Promise(resolve => {
-      output.resolve = () => {
-        req.reply({
-          body: { pdf: cloneDeep(mockHighlights) },
-        })
-        resolve()
-      }
-    })
-  }).as('sync-code')
-
-  return output
-}
-
-const interceptSyncPdfAsync = () => {
-  const output: { resolve: () => void } = {
-    resolve: () => {
-      // do nothing
-    },
-  }
-
-  cy.intercept('/project/*/sync/pdf?*', req => {
-    return new Promise(resolve => {
-      output.resolve = () => {
-        req.reply({
-          body: { code: [{ file: 'main.tex', line: 100 }] },
-          delay: 1,
-        })
-        resolve()
-      }
-    })
-  }).as('sync-pdf')
-
-  return output
-}
-
-const interceptSyncPdf = () => {
-  cy.intercept('/project/*/sync/pdf?*', req => {
-    req.reply({
-      body: { code: [{ file: 'main.tex', line: 100 }] },
-    })
-  }).as('sync-pdf')
-}
-
-// eslint-disable-next-line mocha/no-skipped-tests
-describe.skip('<PdfSynctexControls/>', function () {
+describe('<PdfSynctexControls/>', function () {
   beforeEach(function () {
     window.metaAttributesCache = new Map()
-
-    cy.interceptCompile()
+    window.metaAttributesCache.set('ol-project_id', 'test-project')
+    window.metaAttributesCache.set('ol-preventCompileOnLoad', false)
     cy.interceptEvents()
   })
 
@@ -140,7 +88,10 @@ describe.skip('<PdfSynctexControls/>', function () {
     window.metaAttributesCache = new Map()
   })
 
-  it('handles clicks on sync buttons', function () {
+  // eslint-disable-next-line mocha/no-skipped-tests
+  it.skip('handles clicks on sync buttons', function () {
+    cy.interceptCompile()
+
     const scope = mockScope()
 
     cy.mount(
@@ -150,6 +101,8 @@ describe.skip('<PdfSynctexControls/>', function () {
         <PdfSynctexControls />
       </EditorProviders>
     )
+
+    cy.waitForCompile()
 
     cy.get('.synctex-control-icon').should('have.length', 2)
 
@@ -162,34 +115,44 @@ describe.skip('<PdfSynctexControls/>', function () {
       )
     })
 
-    cy.wait('@compile').then(() => {
+    cy.wrap(null).then(() => {
       setDetachedPosition(mockPosition)
     })
 
-    const syncCode = interceptSyncCodeAsync()
+    cy.interceptAsync({ pathname: '/project/*/sync/code' }, 'sync-code').then(
+      syncCodeResponse => {
+        cy.findByRole('button', { name: 'Go to code location in PDF' }).click()
+        cy.findByRole('button', { name: 'Go to code location in PDF' })
+          .should('be.disabled')
+          .then(() => {
+            syncCodeResponse.resolve({
+              body: { pdf: cloneDeep(mockHighlights) },
+            })
+          })
 
-    cy.findByRole('button', { name: 'Go to code location in PDF' }).click()
-    cy.findByRole('button', { name: 'Go to code location in PDF' })
-      .should('be.disabled')
-      .then(() => {
-        syncCode.resolve()
-      })
+        cy.wait('@sync-code')
+      }
+    )
 
-    cy.wait('@sync-code')
+    cy.interceptAsync({ pathname: '/project/*/sync/pdf' }, 'sync-pdf').then(
+      syncPdfResponse => {
+        cy.findByRole('button', { name: /^Go to PDF location in code/ }).click()
+        cy.findByRole('button', { name: /^Go to PDF location in code/ })
+          .should('be.disabled')
+          .then(() => {
+            syncPdfResponse.resolve({
+              body: { code: [{ file: 'main.tex', line: 100 }] },
+            })
+          })
 
-    const syncPdf = interceptSyncPdfAsync()
-
-    cy.findByRole('button', { name: /^Go to PDF location in code/ }).click()
-    cy.findByRole('button', { name: /^Go to PDF location in code/ })
-      .should('be.disabled')
-      .then(() => {
-        syncPdf.resolve()
-      })
-
-    cy.wait('@sync-pdf')
+        cy.wait('@sync-pdf')
+      }
+    )
   })
 
   it('disables button when multiple entities are selected', function () {
+    cy.interceptCompile()
+
     const scope = mockScope()
 
     cy.mount(
@@ -202,12 +165,16 @@ describe.skip('<PdfSynctexControls/>', function () {
       </EditorProviders>
     )
 
+    cy.waitForCompile()
+
     cy.findByRole('button', { name: 'Go to code location in PDF' }).should(
       'be.disabled'
     )
   })
 
   it('disables button when a file is selected', function () {
+    cy.interceptCompile()
+
     const scope = mockScope()
 
     cy.mount(
@@ -217,6 +184,8 @@ describe.skip('<PdfSynctexControls/>', function () {
         <PdfSynctexControls />
       </EditorProviders>
     )
+
+    cy.waitForCompile()
 
     cy.findByRole('button', { name: 'Go to code location in PDF' }).should(
       'be.disabled'
@@ -229,6 +198,8 @@ describe.skip('<PdfSynctexControls/>', function () {
     })
 
     it('does not have go to PDF location button nor arrow icon', function () {
+      cy.interceptCompile()
+
       const scope = mockScope()
 
       cy.mount(
@@ -238,6 +209,8 @@ describe.skip('<PdfSynctexControls/>', function () {
           <PdfSynctexControls />
         </EditorProviders>
       )
+
+      cy.waitForCompile()
 
       cy.findByRole('button', { name: /^Go to PDF location in code/ }).should(
         'not.exist'
@@ -247,6 +220,8 @@ describe.skip('<PdfSynctexControls/>', function () {
     })
 
     it('send set highlights action', function () {
+      cy.interceptCompile()
+
       const scope = mockScope()
 
       cy.mount(
@@ -257,7 +232,7 @@ describe.skip('<PdfSynctexControls/>', function () {
         </EditorProviders>
       )
 
-      cy.wait('@compile')
+      cy.waitForCompile()
 
       // mock editor cursor position update
       cy.window().then(win => {
@@ -270,23 +245,27 @@ describe.skip('<PdfSynctexControls/>', function () {
 
       cy.spy(detachChannel, 'postMessage').as('postDetachMessage')
 
-      const syncing = interceptSyncCodeAsync()
+      cy.interceptAsync({ pathname: '/project/*/sync/code' }, 'sync-code').then(
+        syncCodeResponse => {
+          cy.findByRole('button', {
+            name: 'Go to code location in PDF',
+          })
+            .should('not.be.disabled')
+            .click()
 
-      cy.findByRole('button', {
-        name: 'Go to code location in PDF',
-      })
-        .should('not.be.disabled')
-        .click()
+          cy.findByRole('button', {
+            name: 'Go to code location in PDF',
+          })
+            .should('be.disabled')
+            .then(() => {
+              syncCodeResponse.resolve({
+                body: { pdf: cloneDeep(mockHighlights) },
+              })
+            })
 
-      cy.findByRole('button', {
-        name: 'Go to code location in PDF',
-      })
-        .should('be.disabled')
-        .then(() => {
-          syncing.resolve()
-        })
-
-      cy.wait('@sync-code')
+          cy.wait('@sync-code')
+        }
+      )
 
       cy.findByRole('button', {
         name: 'Go to code location in PDF',
@@ -294,7 +273,7 @@ describe.skip('<PdfSynctexControls/>', function () {
 
       // synctex is called locally and the result are broadcast for the detached tab
       // NOTE: can't use `.to.deep.include({…})` as it doesn't match the nested array
-      cy.get('@postDetachMessage').should('be.calledWith', {
+      cy.get('@postDetachMessage').should('have.been.calledWith', {
         role: 'detacher',
         event: 'action-setHighlights',
         data: { args: [mockHighlights] },
@@ -302,7 +281,7 @@ describe.skip('<PdfSynctexControls/>', function () {
     })
 
     it('reacts to sync to code action', function () {
-      interceptSyncPdf()
+      cy.interceptCompile()
 
       const scope = mockScope()
 
@@ -312,17 +291,25 @@ describe.skip('<PdfSynctexControls/>', function () {
           <WithSelectedEntities mockSelectedEntities={mockSelectedEntities} />
           <PdfSynctexControls />
         </EditorProviders>
-      ).then(() => {
-        testDetachChannel.postMessage({
-          role: 'detached',
-          event: 'action-sync-to-code',
-          data: {
-            args: [mockPosition],
-          },
-        })
-      })
+      )
 
-      cy.wait('@sync-pdf')
+      cy.waitForCompile()
+
+      cy.interceptAsync({ pathname: '/project/*/sync/pdf' }, 'sync-pdf')
+        .then(syncPdfResponse => {
+          syncPdfResponse.resolve({
+            body: { code: [{ file: 'main.tex', line: 100 }] },
+          })
+
+          testDetachChannel.postMessage({
+            role: 'detached',
+            event: 'action-sync-to-code',
+            data: {
+              args: [mockPosition],
+            },
+          })
+        })
+        .wait('@sync-pdf')
     })
   })
 
@@ -332,6 +319,8 @@ describe.skip('<PdfSynctexControls/>', function () {
     })
 
     it('does not have go to code location button nor arrow icon', function () {
+      cy.interceptCompile()
+
       const scope = mockScope()
 
       cy.mount(
@@ -341,6 +330,8 @@ describe.skip('<PdfSynctexControls/>', function () {
         </EditorProviders>
       )
 
+      cy.waitForCompile()
+
       cy.findByRole('button', {
         name: 'Go to code location in PDF',
       }).should('not.exist')
@@ -349,6 +340,8 @@ describe.skip('<PdfSynctexControls/>', function () {
     })
 
     it('send go to code line action', function () {
+      cy.interceptCompile()
+
       const scope = mockScope()
 
       cy.mount(
@@ -357,7 +350,7 @@ describe.skip('<PdfSynctexControls/>', function () {
         </EditorProviders>
       )
 
-      cy.wait('@compile').then(() => {
+      cy.waitForCompile().then(() => {
         testDetachChannel.postMessage({
           role: 'detacher',
           event: `state-position`,
@@ -384,7 +377,7 @@ describe.skip('<PdfSynctexControls/>', function () {
 
       cy.get('.synctex-spin-icon').should('not.exist')
 
-      cy.get('@postDetachMessage').should('be.calledWith', {
+      cy.get('@postDetachMessage').should('have.been.calledWith', {
         role: 'detached',
         event: 'action-sync-to-code',
         data: {
@@ -394,6 +387,8 @@ describe.skip('<PdfSynctexControls/>', function () {
     })
 
     it('update inflight state', function () {
+      cy.interceptCompile()
+
       const scope = mockScope()
 
       cy.mount(
@@ -403,7 +398,7 @@ describe.skip('<PdfSynctexControls/>', function () {
         </EditorProviders>
       )
 
-      cy.wrap(null).then(() => {
+      cy.waitForCompile().then(() => {
         testDetachChannel.postMessage({
           role: 'detacher',
           event: `state-position`,

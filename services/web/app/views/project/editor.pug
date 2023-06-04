@@ -63,9 +63,12 @@ block content
 					button(ng-hide="protected",ng-click="hide()").close.pull-right
 						span(aria-hidden="true") &times;
 						span.sr-only #{translate("close")}
-					.system-message-content(ng-bind-html="htmlContent")
+					.system-message-content
+						| {{htmlContent}}
 
 			grammarly-warning(delay=10000)
+			if hasFeature('saas')
+				legacy-editor-warning(delay=10000)
 
 		include ./editor/main
 

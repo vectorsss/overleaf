@@ -1,4 +1,5 @@
 @import 'colors.less';
+@import 'z-index.less';
 
 //
 // Variables
@@ -107,8 +108,10 @@
 @line-height-small: 1.5;
 
 @border-radius-base: 3px;
+@border-radius-base-new: 4px;
 @border-radius-large: 5px;
 @border-radius-small: 2px;
+@border-width-sm: 1px;
 @border-width-base: 3px; // only used by plans and cards
 @border-size: 1px;
 @border-color-base: @neutral-60;
@@ -175,6 +178,10 @@
 @btn-danger-color: #fff;
 @btn-danger-bg: @red;
 @btn-danger-border: transparent;
+
+@btn-danger-ghost-color: @red-50;
+@btn-danger-ghost-bg: transparent;
+@btn-danger-ghost-border: transparent;
 
 @btn-link-disabled-color: @gray-light;
 
@@ -256,6 +263,32 @@
 
 // Note: Deprecated @dropdown-caret-color as of v3.1.0
 @dropdown-caret-color: #000;
+
+//== List group
+//
+//##
+
+//** Background color on `.list-group-item`
+@list-group-bg: #fff;
+//** `.list-group-item` border color
+@list-group-border: #ddd;
+//** List group border radius
+@list-group-border-radius: @border-radius-base;
+
+//** Background color of single list elements on hover
+@list-group-hover-bg: @component-active-bg;
+//** Text color of single list elements on hover
+@list-group-hover-color: @component-active-color;
+//** Text color of active list elements
+@list-group-active-color: @component-active-color;
+//** Background color of active list elements
+@list-group-active-bg: @component-active-bg;
+//** Border color of active list elements
+@list-group-active-border: @list-group-active-bg;
+@list-group-active-text-color: lighten(@list-group-active-bg, 40%);
+
+@list-group-link-color: #555;
+@list-group-link-heading-color: #333;
 
 //-- Z-index master list
 //
@@ -350,7 +383,6 @@
 @navbar-border-radius: 0;
 @navbar-padding-horizontal: floor((@grid-gutter-width / 2));
 @navbar-padding-vertical: ((@navbar-height - @line-height-computed) / 2);
-@navbar-collapse-max-height: 380px;
 
 @navbar-default-color: #fff;
 @navbar-default-bg: @neutral-90;
@@ -718,8 +750,14 @@
 @btn-primary-hover-bg-color: @green-dark;
 @btn-secondary-hover-bg-color: @neutral-20;
 
+// Shadows
+@box-shadow: 0px 4px 12px rgba(30, 37, 48, 0.12),
+  0px 2px 4px rgba(30, 37, 48, 0.08);
+
 // Cards
-@card-box-shadow: none;
+@card-border-radius: @border-radius-base-new;
+@card-gray-bg-color: @neutral-10; // only some variations of cards
+@card-box-shadow: @box-shadow; // only some variations of cards
 
 // Project table
 @structured-list-link-color: @blue;
@@ -945,3 +983,17 @@
 
 @mobile-action-element-width: 48px;
 @mobile-action-element-height: @mobile-action-element-width;
+
+// React History
+@history-react-header-bg: @neutral-80;
+@history-react-header-color: #fff;
+@history-react-separator-color: @neutral-80;
+@history-main-bg: #fff;
+
+// Gradients
+@premium-gradient: linear-gradient(
+  246deg,
+  @blue-70 0%,
+  #254c84 29%,
+  @blue-40 97%
+);

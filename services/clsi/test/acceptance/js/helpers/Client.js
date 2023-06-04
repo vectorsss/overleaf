@@ -1,5 +1,4 @@
 /* eslint-disable
-    camelcase,
     no-unused-vars,
 */
 // TODO: This file was created by bulk-decaffeinate.
@@ -12,11 +11,10 @@
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
 let Client
+const express = require('express')
 const request = require('request')
 const fs = require('fs')
 const Settings = require('@overleaf/settings')
-
-const host = 'localhost'
 
 module.exports = Client = {
   host: Settings.apis.clsi.url,
@@ -25,7 +23,7 @@ module.exports = Client = {
     return Math.random().toString(16).slice(2)
   },
 
-  compile(project_id, data, callback) {
+  compile(projectId, data, callback) {
     if (callback == null) {
       callback = function () {}
     }
@@ -35,7 +33,7 @@ module.exports = Client = {
     }
     return request.post(
       {
-        url: `${this.host}/project/${project_id}/compile`,
+        url: `${this.host}/project/${projectId}/compile`,
         json: {
           compile: data,
         },
@@ -44,11 +42,11 @@ module.exports = Client = {
     )
   },
 
-  clearCache(project_id, callback) {
+  clearCache(projectId, callback) {
     if (callback == null) {
       callback = function () {}
     }
-    return request.del(`${this.host}/project/${project_id}`, callback)
+    return request.del(`${this.host}/project/${projectId}`, callback)
   },
 
   getOutputFile(response, type) {
@@ -60,28 +58,41 @@ module.exports = Client = {
     return null
   },
 
-  runServer(port, directory) {
-    const express = require('express')
+  runFakeFilestoreService(directory) {
     const app = express()
     app.use(express.static(directory))
-    console.log('starting test server on', port, host)
-    return app.listen(port, host).on('error', error => {
-      console.error('error starting server:', error.message)
-      return process.exit(1)
+    this.startFakeFilestoreApp(app)
+  },
+
+  startFakeFilestoreApp(app) {
+    let server
+    before(function (done) {
+      server = app.listen(error => {
+        if (error) {
+          done(new Error('error starting server: ' + error.message))
+        } else {
+          const addr = server.address()
+          Settings.filestoreDomainOveride = `http://localhost:${addr.port}`
+          done()
+        }
+      })
+    })
+    after(function (done) {
+      server.close(done)
     })
   },
 
-  syncFromCode(project_id, file, line, column, callback) {
-    Client.syncFromCodeWithImage(project_id, file, line, column, '', callback)
+  syncFromCode(projectId, file, line, column, callback) {
+    Client.syncFromCodeWithImage(projectId, file, line, column, '', callback)
   },
 
-  syncFromCodeWithImage(project_id, file, line, column, imageName, callback) {
+  syncFromCodeWithImage(projectId, file, line, column, imageName, callback) {
     if (callback == null) {
       callback = function () {}
     }
     return request.get(
       {
-        url: `${this.host}/project/${project_id}/sync/code`,
+        url: `${this.host}/project/${projectId}/sync/code`,
         qs: {
           imageName,
           file,
@@ -102,17 +113,17 @@ module.exports = Client = {
     )
   },
 
-  syncFromPdf(project_id, page, h, v, callback) {
-    Client.syncFromPdfWithImage(project_id, page, h, v, '', callback)
+  syncFromPdf(projectId, page, h, v, callback) {
+    Client.syncFromPdfWithImage(projectId, page, h, v, '', callback)
   },
 
-  syncFromPdfWithImage(project_id, page, h, v, imageName, callback) {
+  syncFromPdfWithImage(projectId, page, h, v, imageName, callback) {
     if (callback == null) {
       callback = function () {}
     }
     return request.get(
       {
-        url: `${this.host}/project/${project_id}/sync/pdf`,
+        url: `${this.host}/project/${projectId}/sync/pdf`,
         qs: {
           imageName,
           page,
@@ -133,7 +144,7 @@ module.exports = Client = {
     )
   },
 
-  compileDirectory(project_id, baseDirectory, directory, serverPort, callback) {
+  compileDirectory(projectId, baseDirectory, directory, callback) {
     if (callback == null) {
       callback = function () {}
     }
@@ -180,7 +191,7 @@ module.exports = Client = {
         ) {
           resources.push({
             path: entity,
-            url: `http://${host}:${serverPort}/${directory}/${entity}`,
+            url: `http://filestore/${directory}/${entity}`,
             modified: stat.mtime,
           })
         }
@@ -200,23 +211,23 @@ module.exports = Client = {
           req.options = body
         }
 
-        return this.compile(project_id, req, callback)
+        return this.compile(projectId, req, callback)
       }
     )
   },
 
-  wordcount(project_id, file, callback) {
+  wordcount(projectId, file, callback) {
     const image = undefined
-    Client.wordcountWithImage(project_id, file, image, callback)
+    Client.wordcountWithImage(projectId, file, image, callback)
   },
 
-  wordcountWithImage(project_id, file, image, callback) {
+  wordcountWithImage(projectId, file, image, callback) {
     if (callback == null) {
       callback = function () {}
     }
     return request.get(
       {
-        url: `${this.host}/project/${project_id}/wordcount`,
+        url: `${this.host}/project/${projectId}/wordcount`,
         qs: {
           image,
           file,

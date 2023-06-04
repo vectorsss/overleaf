@@ -4,29 +4,27 @@ import Icon from '../../../../../../shared/components/icon'
 import Tooltip from '../../../../../../shared/components/tooltip'
 import * as eventTracking from '../../../../../../infrastructure/event-tracking'
 import { useProjectListContext } from '../../../../context/project-list-context'
+import { useLocation } from '../../../../../../shared/hooks/use-location'
 
 function DownloadProjectsButton() {
   const { selectedProjects, selectOrUnselectAllProjects } =
     useProjectListContext()
   const { t } = useTranslation()
   const text = t('download')
+  const location = useLocation()
 
   const projectIds = selectedProjects.map(p => p.id)
 
   const handleDownloadProjects = useCallback(() => {
-    eventTracking.send(
-      'project-list-page-interaction',
-      'project action',
-      'Download Zip'
-    )
+    eventTracking.sendMB('project-list-page-interaction', {
+      action: 'downloadZips',
+    })
 
-    window.location.assign(
-      `/project/download/zip?project_ids=${projectIds.join(',')}`
-    )
+    location.assign(`/project/download/zip?project_ids=${projectIds.join(',')}`)
 
     const selected = false
     selectOrUnselectAllProjects(selected)
-  }, [projectIds, selectOrUnselectAllProjects])
+  }, [projectIds, selectOrUnselectAllProjects, location])
 
   return (
     <Tooltip

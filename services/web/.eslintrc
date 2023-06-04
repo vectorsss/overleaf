@@ -112,6 +112,32 @@
       ]
     },
     {
+      // React component specific rules
+      //
+      "files": ["**/frontend/js/**/components/**/*.{js,ts,tsx}", "**/frontend/js/**/hooks/**/*.{js,ts,tsx}"],
+      "rules": {
+        // https://astexplorer.net/
+        "no-restricted-syntax": [
+          "error",
+          // prohibit direct calls to methods of window.location
+          {
+            "selector": "CallExpression[callee.object.object.name='window'][callee.object.property.name='location']",
+            "message": "Modify location via useLocation instead of calling window.location methods directly"
+          },
+          // prohibit assignment to window.location
+          {
+            "selector": "AssignmentExpression[left.object.name='window'][left.property.name='location']",
+            "message": "Modify location via useLocation instead of calling window.location methods directly"
+          },
+          // prohibit assignment to window.location.href
+          {
+            "selector": "AssignmentExpression[left.object.object.name='window'][left.object.property.name='location'][left.property.name='href']",
+            "message": "Modify location via useLocation instead of calling window.location methods directly"
+          }
+        ]
+      }
+    },
+    {
       // Frontend specific rules
       "files": ["**/frontend/js/**/*.{js,ts,tsx}", "**/frontend/stories/**/*.{js,ts,tsx}", "**/*.stories.{js,ts,tsx}", "**/test/frontend/**/*.{js,ts,tsx}", "**/test/frontend/components/**/*.spec.{js,ts,tsx}"],
       "env": {
@@ -154,11 +180,14 @@
         //   "ignoreRefs": true
         // },],
         "react/no-did-update-set-state": "error",
-        "react/no-unknown-property": "error",
         "react/no-unused-prop-types": "error",
         "react/prop-types": "error",
         // "react/react-in-jsx-scope": "error",
         // END: inline standard-react rules
+
+        "react/no-unknown-property": ["error", {
+          "ignore": ["dnd-container", "dropdown-toggle"]
+        }],
 
         "react/jsx-no-target-blank": ["error", {
           "allowReferrer": true

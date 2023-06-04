@@ -29,11 +29,13 @@ import {
 import { PricingFormState } from '../../../context/types/payment-context-value'
 import { CreateError } from '../../../../../../../types/subscription/api'
 import { CardElementChangeState } from '../../../../../../../types/recurly/elements'
+import { useLocation } from '../../../../../shared/hooks/use-location'
 
 function CheckoutPanel() {
   const { t } = useTranslation()
   const {
     couponError,
+    currencyCode,
     planCode,
     planName,
     pricingFormState,
@@ -58,6 +60,7 @@ function CheckoutPanel() {
   const [formIsValid, setFormIsValid] = useState<boolean>()
   const [threeDSecureActionTokenId, setThreeDSecureActionTokenId] =
     useState<string>()
+  const location = useLocation()
 
   const isCreditCardPaymentMethod = paymentMethod === 'credit_card'
   const isPayPalPaymentMethod = paymentMethod === 'paypal'
@@ -153,7 +156,7 @@ function CheckoutPanel() {
             'subscription-submission-success',
             planCode
           )
-          window.location.assign('/user/subscription/thank-you')
+          location.assign('/user/subscription/thank-you')
         } catch (error) {
           setIsProcessing(false)
 
@@ -174,6 +177,7 @@ function CheckoutPanel() {
       ITMReferrer,
       isAddCompanyDetailsChecked,
       isPayPalPaymentMethod,
+      location,
       planCode,
       pricing,
       pricingFormState,
@@ -184,6 +188,8 @@ function CheckoutPanel() {
   const payPal = useRef<PayPalInstance>()
 
   useEffect(() => {
+    if (!recurly) return
+
     payPal.current = recurly.PayPal({
       display: { displayName: planName },
     })
@@ -208,6 +214,10 @@ function CheckoutPanel() {
   const handleCardChange = useCallback((state: CardElementChangeState) => {
     setCardIsValid(state.valid)
   }, [])
+
+  if (currencyCode === 'INR' && paymentMethod !== 'credit_card') {
+    setPaymentMethod('credit_card')
+  }
 
   if (recurlyLoadError) {
     return (
@@ -304,6 +314,7 @@ function CheckoutPanel() {
           onSubmit={handleSubmit}
           onChange={handleFormValidation}
           ref={formRef}
+          data-testid="checkout-form"
         >
           {genericError && (
             <Alert bsStyle="warning" className="small">
@@ -315,10 +326,12 @@ function CheckoutPanel() {
               <strong>{couponError}</strong>
             </Alert>
           )}
-          <PaymentMethodToggle
-            onChange={handlePaymentMethod}
-            paymentMethod={paymentMethod}
-          />
+          {currencyCode === 'INR' ? null : (
+            <PaymentMethodToggle
+              onChange={handlePaymentMethod}
+              paymentMethod={paymentMethod}
+            />
+          )}
           {elements.current && (
             <CardElement
               className={classnames({ hidden: !isCreditCardPaymentMethod })}

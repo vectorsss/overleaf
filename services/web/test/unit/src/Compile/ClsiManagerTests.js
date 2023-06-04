@@ -33,6 +33,7 @@ describe('ClsiManager', function () {
         }
       },
       inc: sinon.stub(),
+      count: sinon.stub(),
     }
     this.ClsiManager = SandboxedModule.require(modulePath, {
       requires: {
@@ -514,6 +515,7 @@ describe('ClsiManager', function () {
             this.project_id,
             this.user_id,
             'standard',
+            'e2',
             {
               method: 'DELETE',
               url: `${this.settings.apis.clsi.url}/project/${this.project_id}/user/${this.user_id}?compileBackendClass=e2&compileGroup=standard`,
@@ -965,7 +967,7 @@ describe('ClsiManager', function () {
       it('should send the request to the CLSI', function () {
         const url = `${this.settings.apis.clsi.url}/project/${this.project_id}/user/${this.user_id}/compile?compileBackendClass=e2&compileGroup=standard`
         this.ClsiManager._makeRequest
-          .calledWith(this.project_id, this.user_id, 'standard', {
+          .calledWith(this.project_id, this.user_id, 'standard', 'e2', {
             method: 'POST',
             url,
             json: this.req,
@@ -1030,6 +1032,7 @@ describe('ClsiManager', function () {
             this.project_id,
             this.user_id,
             'standard',
+            'e2',
             {
               method: 'GET',
               url: `http://clsi.example.com/project/${this.project_id}/user/${this.user_id}/wordcount?compileBackendClass=e2&compileGroup=standard`,
@@ -1067,6 +1070,7 @@ describe('ClsiManager', function () {
             this.project_id,
             this.user_id,
             'standard',
+            'e2',
             {
               method: 'GET',
               url: `http://clsi.example.com/project/${this.project_id}/user/${this.user_id}/wordcount?compileBackendClass=e2&compileGroup=standard`,
@@ -1099,6 +1103,7 @@ describe('ClsiManager', function () {
             this.project_id,
             this.user_id,
             'standard',
+            'e2',
             {
               method: 'GET',
               url: `http://clsi.example.com/project/${this.project_id}/user/${this.user_id}/wordcount?compileBackendClass=e2&compileGroup=standard`,
@@ -1127,6 +1132,7 @@ describe('ClsiManager', function () {
         this.project_id,
         this.user_id,
         'standard',
+        'e2',
         this.opts,
         () => {
           const args = this.request.args[0]
@@ -1143,6 +1149,7 @@ describe('ClsiManager', function () {
         this.project_id,
         this.user_id,
         'standard',
+        'e2',
         this.opts,
         () => {
           this.ClsiCookieManager.setServerId
@@ -1150,6 +1157,7 @@ describe('ClsiManager', function () {
               this.project_id,
               this.user_id,
               'standard',
+              'e2',
               this.response
             )
             .should.equal(true)
@@ -1175,6 +1183,7 @@ describe('ClsiManager', function () {
           this.project_id,
           this.user_id,
           'standard',
+          'e2',
           this.opts,
           undefined,
           err => {
@@ -1194,6 +1203,7 @@ describe('ClsiManager', function () {
           this.project_id,
           this.user_id,
           'standard',
+          'e2',
           this.opts,
           undefined,
           err => {
@@ -1203,6 +1213,7 @@ describe('ClsiManager', function () {
                 this.project_id,
                 this.user_id,
                 'standard',
+                'e2',
                 this.response
               )
               .should.equal(true)
@@ -1218,6 +1229,7 @@ describe('ClsiManager', function () {
           this.project_id,
           this.user_id,
           'standard',
+          'e2',
           this.opts,
           'node-1',
           err => {
@@ -1229,6 +1241,7 @@ describe('ClsiManager', function () {
             expect(requestOpts.qs).to.deep.equal({
               clsiserverid: 'node-1',
               compileGroup: 'standard',
+              compileBackendClass: 'e2',
             })
             done()
           }
@@ -1240,6 +1253,7 @@ describe('ClsiManager', function () {
           this.project_id,
           this.user_id,
           'standard',
+          'e2',
           this.opts,
           'node-1',
           err => {
@@ -1271,6 +1285,7 @@ describe('ClsiManager', function () {
         this.project_id,
         this.user_id,
         'standard',
+        'e2',
         this.opts,
         () => {
           const args = this.request.args[0]
@@ -1288,6 +1303,7 @@ describe('ClsiManager', function () {
         this.project_id,
         this.user_id,
         'standard',
+        'e2',
         this.opts,
         err => {
           expect(err).to.equal(undefined)

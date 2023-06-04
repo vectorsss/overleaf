@@ -32,7 +32,7 @@ function Badge() {
         href="https://forms.gle/GmSs6odZRKRp3VX98"
         target="_blank"
         rel="noopener noreferrer"
-        className="badge info-badge"
+        className="info-badge"
       >
         <span className="sr-only">{content}</span>
       </a>
@@ -41,13 +41,22 @@ function Badge() {
 }
 
 const showLegacySourceEditor: boolean = getMeta('ol-showLegacySourceEditor')
-const hasNewSourceEditor: boolean = getMeta('ol-hasNewSourceEditor')
+const visualEditorNameVariant: string = getMeta('ol-visualEditorNameVariant')
+const isParticipatingInVisualEditorNamingTest: boolean = getMeta(
+  'ol-isParticipatingInVisualEditorNamingTest'
+)
 
 function EditorSwitch() {
   const [newSourceEditor, setNewSourceEditor] = useScopeValue(
     'editor.newSourceEditor'
   )
   const [richText, setRichText] = useScopeValue('editor.showRichText')
+  const sourceName =
+    visualEditorNameVariant === 'code-visual'
+      ? 'Code Editor'
+      : visualEditorNameVariant === 'source-visual'
+      ? 'Source Editor'
+      : 'Source'
 
   const [visual, setVisual] = useScopeValue('editor.showVisual')
 
@@ -97,22 +106,18 @@ function EditorSwitch() {
       <fieldset className="toggle-switch">
         <legend className="sr-only">Editor mode.</legend>
 
-        {hasNewSourceEditor && (
-          <>
-            <input
-              type="radio"
-              name="editor"
-              value="cm6"
-              id="editor-switch-cm6"
-              className="toggle-switch-input"
-              checked={!richTextOrVisual && !!newSourceEditor}
-              onChange={handleChange}
-            />
-            <label htmlFor="editor-switch-cm6" className="toggle-switch-label">
-              <span>Source</span>
-            </label>
-          </>
-        )}
+        <input
+          type="radio"
+          name="editor"
+          value="cm6"
+          id="editor-switch-cm6"
+          className="toggle-switch-input"
+          checked={!richTextOrVisual && !!newSourceEditor}
+          onChange={handleChange}
+        />
+        <label htmlFor="editor-switch-cm6" className="toggle-switch-label">
+          <span>{sourceName}</span>
+        </label>
 
         {showLegacySourceEditor ? (
           <>
@@ -126,7 +131,7 @@ function EditorSwitch() {
               onChange={handleChange}
             />
             <label htmlFor="editor-switch-ace" className="toggle-switch-label">
-              <span>{hasNewSourceEditor ? 'Source (legacy)' : 'Source'}</span>
+              <span>Source (legacy)</span>
             </label>
           </>
         ) : null}
@@ -138,7 +143,7 @@ function EditorSwitch() {
         />
       </fieldset>
 
-      {!!richTextOrVisual && (
+      {!!richTextOrVisual && !isParticipatingInVisualEditorNamingTest && (
         <SplitTestBadge splitTestName="rich-text" displayOnVariants={['cm6']} />
       )}
     </div>
@@ -151,6 +156,9 @@ const RichTextToggle: FC<{
   handleChange: (event: ChangeEvent<HTMLInputElement>) => void
 }> = ({ checked, disabled, handleChange }) => {
   const { t } = useTranslation()
+
+  const richTextName =
+    visualEditorNameVariant === 'default' ? 'Rich Text' : 'Visual Editor'
 
   const toggle = (
     <span>
@@ -165,7 +173,7 @@ const RichTextToggle: FC<{
         disabled={disabled}
       />
       <label htmlFor="editor-switch-rich-text" className="toggle-switch-label">
-        <span>Rich Text</span>
+        <span>{richTextName}</span>
       </label>
     </span>
   )

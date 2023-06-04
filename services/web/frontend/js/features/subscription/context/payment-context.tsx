@@ -95,7 +95,10 @@ function usePayment({ publicKey }: RecurlyOptions) {
       return
     }
 
-    eventTracking.sendMB('payment-page-view', { plan: planCode })
+    eventTracking.sendMB('payment-page-view', {
+      plan: planCode,
+      currency: currencyCode,
+    })
     eventTracking.send(
       'subscription-funnel',
       'subscription-form-viewed',
@@ -117,13 +120,10 @@ function usePayment({ publicKey }: RecurlyOptions) {
           country: initialCountry,
         })
         .tax({ tax_code: 'digital', vat_number: '' })
-        .currency(initiallySelectedCurrencyCode)
+        .currency(currencyCode)
         .coupon(initialCouponCode)
         .catch(function (err) {
-          if (
-            initiallySelectedCurrencyCode !== 'USD' &&
-            err.name === 'invalid-currency'
-          ) {
+          if (currencyCode !== 'USD' && err.name === 'invalid-currency') {
             setCurrencyCode('USD')
             setupPricing()
           } else if (err.name === 'api-error' && err.code === 'not-found') {
@@ -147,6 +147,7 @@ function usePayment({ publicKey }: RecurlyOptions) {
     initiallySelectedCurrencyCode,
     planCode,
     publicKey,
+    currencyCode,
     t,
   ])
 
@@ -202,7 +203,7 @@ function usePayment({ publicKey }: RecurlyOptions) {
       })()
       setCoupon(couponData)
     })
-  }, [])
+  }, [currencyCode])
 
   const addCoupon = useCallback(
     (coupon: PricingFormState['coupon']) => {
@@ -339,7 +340,7 @@ export const PaymentContext = createContext<PaymentContextValue | undefined>(
 
 type PaymentProviderProps = {
   publicKey: string
-  children: React.ReactNode
+  children?: React.ReactNode
 }
 
 export function PaymentProvider({ publicKey, ...props }: PaymentProviderProps) {
