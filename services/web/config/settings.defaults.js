@@ -652,6 +652,14 @@ module.exports = {
       },
     ],
   },
+
+  allowedImageNames: [
+    { imageName: 'texlive-full', imageDesc: 'TeX Live 2022' },
+    {
+      imageName: 'registry.cn-shanghai.aliyuncs.com/elliot98/texlive-full',
+      imageDesc: 'TeX Live 2020',
+    },
+  ],
   // Example:
   //   header_extras: [{text: "Some Page", url: "http://example.com/some/page", class: "subdued"}]
 

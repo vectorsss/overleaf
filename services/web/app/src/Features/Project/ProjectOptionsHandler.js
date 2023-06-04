@@ -30,7 +30,8 @@ const ProjectOptionsHandler = {
       return callback(new Error(`invalid imageName: ${imageName}`))
     }
     const conditions = { _id: projectId }
-    const update = { imageName: settings.imageRoot + '/' + imageName }
+    // const update = { imageName: settings.imageRoot + '/' + imageName }
+    const update = { imageName: imageName }
     Project.updateOne(conditions, update, {}, callback)
   },
 

@@ -30,6 +30,7 @@ services:
     environment:
       - DOCKER_RUNNER=true
       - TEXLIVE_IMAGE=texlive-full # docker build texlive -t texlive-full
+      - ALLOWED_IMAGES=texlive-full registry.cn-shanghai.aliyuncs.com/elliot98/texlive-full
       - COMPILES_HOST_DIR=${PWD}/compiles
     user: root
     volumes:
