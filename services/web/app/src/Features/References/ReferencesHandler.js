@@ -17,6 +17,7 @@ const OError = require('@overleaf/o-error')
 const logger = require('@overleaf/logger')
 const request = require('request')
 const settings = require('@overleaf/settings')
+var bibtexParse = require('@orcid/bibtex-parse-js');
 const Features = require('../../infrastructure/Features')
 const ProjectGetter = require('../Project/ProjectGetter')
 const UserGetter = require('../User/UserGetter')
@@ -162,9 +163,9 @@ module.exports = ReferencesHandler = {
   },
 
   _doIndexOperation(projectId, project, docIds, fileIds, callback) {
-    if (!Features.hasFeature('references')) {
-      return callback()
-    }
+    // if (!Features.hasFeature('references')) {
+    //   return callback()
+    // }
     return ReferencesHandler._isFullIndex(project, function (err, isFullIndex) {
       if (err) {
         OError.tag(err, 'error checking whether to do full index', {
@@ -196,8 +197,17 @@ module.exports = ReferencesHandler = {
           const bibFileUrls = fileIds.map(fileId =>
             ReferencesHandler._buildFileUrl(projectId, fileId)
           )
-          const allUrls = bibDocUrls.concat(bibFileUrls)
-          logger.debug({ projectId, allUrls: allUrls }, 'indexing urls')
+          var allUrls = bibDocUrls.concat(bibFileUrls);
+          logger.debug({ projectId, allUrls: allUrls }, '[indexing] urls')
+          // Elliot Indexing
+          
+          var data = {projectId, keys: []}
+          try {
+            var ret =  ReferencesHandler.getKeysForURL(allUrls, data, callback);
+          } catch (err) {
+            return
+          }
+          return ret;
           return request.post(
             {
               url: `${settings.apis.references.url}/project/${projectId}/index`,
@@ -228,6 +238,48 @@ module.exports = ReferencesHandler = {
       )
     })
   },
+
+  getKeysForURL(urls, data, callback) {
+    if (callback == null) {
+      callback = function () {}
+    }
+
+    if (typeof(data) == "undefined") {
+      var data = {keys: []};
+    }
+
+    if (urls.length <= 0) {
+      logger.debug({data}, "[indexing] success");
+      return callback(null, data);
+    }
+
+    var u = urls.shift();
+
+    request.get(u, function(err, res, body) {
+      if (err) {
+        logger.debug({error: err, url: u}, "[indexing] error from request")
+        return callback(err, data);
+      }
+
+      if (res.statusCode < 200 && res.statusCode >= 300) {
+        logger.debug({status: res.statusCode, url: u}, "[indexing] error, wrong states")
+        return callback(null, data);
+      }
+
+      var sampleBib = bibtexParse.toJSON(body);
+      try {
+        for (let item of sampleBib) {
+          let tmp_key = item.citationKey;
+          data.keys.push(tmp_key);
+        }
+        logger.debug({parsed: sampleBib, url: u, keys: data.keys}, "[indexing] successful");
+        return ReferencesHandler.getKeysForURL(urls, data, callback);
+      } catch (err) {
+        logger.debug({error: err, url: u}, "[indexing] error");
+        return callback(err, data)
+      }
+    })
+  }
 }
 
 function __guard__(value, transform) {
