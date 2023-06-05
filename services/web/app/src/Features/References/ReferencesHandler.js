@@ -205,7 +205,7 @@ module.exports = ReferencesHandler = {
           try {
             var ret =  ReferencesHandler.getKeysForURL(allUrls, data, callback);
           } catch (err) {
-            return
+            return callback(err)
           }
           return ret;
           return request.post(

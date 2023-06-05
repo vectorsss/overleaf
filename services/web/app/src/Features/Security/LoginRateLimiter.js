@@ -2,8 +2,8 @@ const { RateLimiter } = require('../../infrastructure/RateLimiter')
 const { promisifyAll } = require('../../util/promises')
 
 const rateLimiter = new RateLimiter('login', {
-  points: 10,
-  duration: 120,
+  points: 5,
+  duration: 600,
 })
 
 function processLoginRequest(email, callback) {
