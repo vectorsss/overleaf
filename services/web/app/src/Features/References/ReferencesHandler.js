@@ -197,6 +197,7 @@ module.exports = ReferencesHandler = {
             ReferencesHandler._buildFileUrl(projectId, fileId)
           )
           const allUrls = bibDocUrls.concat(bibFileUrls)
+          logger.debug({ projectId, allUrls: allUrls }, 'indexing urls')
           return request.post(
             {
               url: `${settings.apis.references.url}/project/${projectId}/index`,

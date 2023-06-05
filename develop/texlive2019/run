@@ -1,0 +1,5 @@
+#!/usr/bin/expect
+set timeout 10
+spawn "wget -O - -- https://mirror.nju.edu.cn/tex-historic/systems/texlive/2019/install-tl-unx.tar.gz | tar xzf - --strip-components=1 && perl ./install-tl -repository https://mirror.nju.edu.cn/tex-historic/systems/texlive/2019/tlnet-final/ -scheme full"
+expect "Enter command:" {send "I\n"}
+interact

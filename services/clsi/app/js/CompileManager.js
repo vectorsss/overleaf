@@ -170,7 +170,7 @@ async function doCompile(request) {
   Metrics.inc('compiles', 1, request.metricsOpts)
   Metrics.inc(`compiles-with-image.${tag}`, 1, request.metricsOpts)
   const compileName = getCompileName(request.project_id, request.user_id)
-
+  logger.debug({compileName}, "compile with image name")
   try {
     await LatexRunner.promises.runLatex(compileName, {
       directory: compileDir,

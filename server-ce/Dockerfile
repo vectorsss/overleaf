@@ -30,6 +30,7 @@ RUN node genScript install | bash
 
 # Compile
 # --------------------
+# RUN cd /overleaf/services/web && npm run 'lezer-latex:generate'
 RUN node genScript compile | bash
 
 # Copy runit service startup scripts to its location
