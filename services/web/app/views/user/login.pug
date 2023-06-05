@@ -9,8 +9,6 @@ block content
 						.page-header
 							h1 #{translate("log_in")}
 
-						button.btn-primary.btn(onClick="location='/caslogin'" style="margin-bottom: 30px; width: 100%;") 中国科大统一身份认证
-
 						form(data-ol-async-form, name="loginForm", action='/login', method="POST")
 							input(name='_csrf', type='hidden', value=csrfToken)
 							+formMessages()
@@ -38,9 +36,11 @@ block content
 									span(hidden data-ol-inflight="pending") #{translate("logging_in")}…
 								a.pull-right(href='/user/password/reset') #{translate("forgot_your_password")}?
 
+						button.btn-primary.btn(onClick="location='/caslogin'" style="margin-bottom: 30px; margin-top: 10px; width: 100%;") 中国科大统一身份认证
+
 						h2 使用说明
 						ul
-							li 平台使用中国科大统一身份认证登录。
+							li 平台使用中国科大统一身份认证登录。如需开通校外合作账户，请向邮箱发送申请。
 							li 平台支持无限数量合作者、无编译时间限制、历史记录、审阅批注、中文支持、Git 同步等功能。
 							li 
 								span(style="color:red;") 平台正在试运行阶段，开发团队尽力提供服务质量保证，但依然存在数据丢失风险，请注意备份重要资料。
