@@ -69,19 +69,23 @@ const beginRemoteGitRequest =
 const endRemoteGitRequest =
 	async function( client, project, cmd, auth, pflag )
 {
-	console.log( client.count, 'remote git request ended, pulling into pad' );
-	await git.pull( project.padDir );
-	if( cmd === 'git-receive-pack' )
-	{
-		console.log( client.count, 'upsyncing' );
-		await upsync( client, olServer, project );
+	try {
+		console.log( client.count, 'remote git request ended, pulling into pad' );
+		await git.pull( project.padDir );
+		if( cmd === 'git-receive-pack' )
+		{
+			console.log( client.count, 'upsyncing' );
+			await upsync( client, olServer, project );
+		}
+		console.log( client.count, 'overleaf logout' );
+		await olops.logout( client, olServer );
+		console.log( client.count, 'releasing project semaphore' );
+		project.semaphore.release( pflag );
+		users.release( auth.email, auth.uflag );
+		console.log( client.count, 'all done' );
+	} catch (e) {
+		console.log("[error]", e)
 	}
-	console.log( client.count, 'overleaf logout' );
-	await olops.logout( client, olServer );
-	console.log( client.count, 'releasing project semaphore' );
-	project.semaphore.release( pflag );
-	users.release( auth.email, auth.uflag );
-	console.log( client.count, 'all done' );
 };
 
 /*

@@ -15,7 +15,11 @@ const gitBinary = '/usr/bin/git';
 const clone =
 	async function( gitDir, baseDir )
 {
-	await aspawn( gitBinary, [ 'clone', 'file://' + gitDir ], { cwd: baseDir } );
+	try{
+		await aspawn( gitBinary, [ 'clone', gitDir ] , { cwd: baseDir } );
+	} catch (err) {
+		console.log("[error]", err)
+	}
 };
 
 /*
@@ -24,7 +28,11 @@ const clone =
 const init =
 	async function( dir )
 {
-	await aspawn( gitBinary, [ 'init', '--bare' ], { cwd: dir } );
+	try{
+		await aspawn( gitBinary, [ 'init', '--bare' ] , { cwd: dir } );
+	} catch (err) {
+		console.log("[error]", err)
+	}
 };
 
 /*
@@ -32,8 +40,12 @@ const init =
 */
 const pull =
 	async function( dir )
-{
-	await aspawn( gitBinary, [ 'pull', '--no-edit' ] , { cwd: dir } );
+{	
+	try{
+		await aspawn( gitBinary, [ 'pull', '--no-edit' ] , { cwd: dir } );
+	} catch (err) {
+		console.log("[error]", err)
+	}
 };
 
 /*

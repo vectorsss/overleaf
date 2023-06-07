@@ -8,5 +8,6 @@ module.exports =
 		olServer + '/Project/' + project_id + '/download/zip',
 		{ responseType: 'arraybuffer' }
 	);
+	console.log("[debug] download size:", res.data.length);
 	return res.data;
 };

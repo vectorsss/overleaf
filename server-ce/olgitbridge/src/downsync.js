@@ -4,6 +4,7 @@
 const fs = require( 'fs/promises' );
 const olops = require( './olops' );
 const unzipper = require( 'unzipper' );
+const { log } = require('console');
 
 /*
 | Recurservly removes all but the .git directory
@@ -36,6 +37,7 @@ module.exports =
 	const blueDir = project.blueDir;
 
 	console.log( client.count, 'overleaf downloading zip' );
+
 	const zipFile = await olops.downloadZip( client, olServer, project.id );
 	const directory = await unzipper.Open.buffer( zipFile );
 

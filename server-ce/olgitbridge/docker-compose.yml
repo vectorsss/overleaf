@@ -6,7 +6,7 @@ services:
     image: "olgitbridge"
     restart: "always"
     volumes:
-      - "data:/var/olgitbridge/data"
+      - "./data:/var/olgitbridge/data/"
     ports:
       - 5000:5000
     environment:

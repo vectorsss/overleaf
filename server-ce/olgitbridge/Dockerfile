@@ -1,7 +1,7 @@
 FROM node:lts-slim
 
 WORKDIR /var/olgitbridge/
-COPY . .
+ADD . .
 RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list && sed -i 's|security.debian.org/debian-security|mirrors.ustc.edu.cn/debian-security|g' /etc/apt/sources.list
 RUN apt-get update && apt-get upgrade -y && apt-get install --no-install-recommends git ca-certificates -y && apt-get clean
 RUN npm install
